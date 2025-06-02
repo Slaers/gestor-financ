@@ -171,8 +171,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, setLogLevel, writeBatch, getDoc, updateDoc, arrayUnion, getDocs, where, runTransaction, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // Adicionado deleteField
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, initializeAuth, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // Adicionado initializeAuth, indexedDBLocalPersistence
+        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, setLogLevel, writeBatch, getDoc, updateDoc, arrayUnion, getDocs, where, runTransaction, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
 
         document.addEventListener('DOMContentLoaded', () => {
             const loadingOverlay = document.getElementById('loading-overlay');
@@ -190,7 +190,20 @@
             
             const app = initializeApp(firebaseConfigProvided);
             const db = getFirestore(app);
-            const auth = getAuth(app);
+            let authInstance; // Renomeado para authInstance para evitar conflito com a variável auth global do Firebase
+            try {
+                authInstance = initializeAuth(app, {
+                    persistence: indexedDBLocalPersistence 
+                });
+                console.log("Firebase Auth inicializado com persistência IndexedDB.");
+            } catch (e) {
+                console.error("Erro crítico ao inicializar Firebase Auth com persistência:", e);
+                alert("Não foi possível inicializar o sistema de autenticação devido a restrições de armazenamento do navegador. Por favor, verifique as configurações de cookies e privacidade do seu navegador (especialmente se cookies de terceiros estão bloqueados) e tente recarregar a página.");
+                loadingOverlay.classList.add('hidden-section');
+                showScreen('auth'); // Mostra a tela de auth para que o usuário não fique preso no loading
+                showAuthError('login', "Erro de armazenamento do navegador. Verifique as configurações.");
+                return; // Impede o resto do script de rodar se o Auth não puder ser inicializado
+            }
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfigProvided.projectId || 'gestao-de-lancamentos-fallback';
             
@@ -342,6 +355,8 @@
                     case 'auth/account-exists-with-different-credential': return 'Já existe uma conta com este email, mas com um método de login diferente. Tente o outro método.';
                     case 'auth/cancelled-popup-request': return 'Múltiplas tentativas de login com pop-up. Por favor, tente novamente.';
                     case 'auth/popup-blocked': return 'O pop-up de login foi bloqueado pelo navegador. Por favor, habilite os pop-ups para este site.';
+                    case 'auth/storage-unsupported': return 'O navegador não suporta armazenamento para persistência do login. Tente um navegador diferente ou verifique as configurações.';
+                    case 'auth/internal-error': return 'Ocorreu um erro interno no sistema de autenticação. Tente novamente.';
                     default: return 'Ocorreu um erro de autenticação. Tente novamente. Código: ' + errorCode;
                 }
             }
@@ -793,7 +808,7 @@
             loginForm.addEventListener('submit', async (e) => { 
                  e.preventDefault(); clearAuthErrors(); showScreen('loading');
                 const email = loginEmailInput.value; const password = loginPasswordInput.value;
-                try { await signInWithEmailAndPassword(auth, email, password); } catch (error) { console.error("Erro no login E-mail/Senha:", error); showAuthError('login', traduireErroAuth(error.code)); showScreen('auth'); } 
+                try { await signInWithEmailAndPassword(authInstance, email, password); } catch (error) { console.error("Erro no login E-mail/Senha:", error); showAuthError('login', traduireErroAuth(error.code)); showScreen('auth'); } 
             });
             registerForm.addEventListener('submit', async (e) => { 
                  e.preventDefault(); clearAuthErrors();
@@ -801,14 +816,14 @@
                 if (password !== confirmPassword) { showAuthError('register', "As senhas não coincidem."); return; }
                 if (password.length < 6) { showAuthError('register', "A senha deve ter no mínimo 6 caracteres."); return; }
                 showScreen('loading');
-                try { await createUserWithEmailAndPassword(auth, email, password); toggleAuthForms(true); loginEmailInput.value = email; loginPasswordInput.value = ''; loginErrorEl.textContent = "Registro realizado! Faça o login."; showScreen('auth'); } catch (error) { console.error("Erro no registro E-mail/Senha:", error); showAuthError('register', traduireErroAuth(error.code)); showScreen('auth'); } 
+                try { await createUserWithEmailAndPassword(authInstance, email, password); toggleAuthForms(true); loginEmailInput.value = email; loginPasswordInput.value = ''; loginErrorEl.textContent = "Registro realizado! Faça o login."; showScreen('auth'); } catch (error) { console.error("Erro no registro E-mail/Senha:", error); showAuthError('register', traduireErroAuth(error.code)); showScreen('auth'); } 
             });
             googleSignInBtn.addEventListener('click', async () => { 
                 clearAuthErrors(); showScreen('loading'); const provider = new GoogleAuthProvider();
-                try { await signInWithPopup(auth, provider); } catch (error) { console.error("Erro no login com Google:", error); showAuthError('google', traduireErroAuth(error.code)); showScreen('auth');} 
+                try { await signInWithPopup(authInstance, provider); } catch (error) { console.error("Erro no login com Google:", error); showAuthError('google', traduireErroAuth(error.code)); showScreen('auth');} 
             });
             logoutBtn.addEventListener('click', async () => {
-                showScreen('loading'); try { await signOut(auth); } catch (error) { console.error("Erro no logout:", error); alert("Erro ao sair."); showScreen('auth'); } 
+                showScreen('loading'); try { await signOut(authInstance); } catch (error) { console.error("Erro no logout:", error); alert("Erro ao sair."); showScreen('auth'); } 
             });
             createHouseholdBtn.addEventListener('click', createHousehold);
             inviteMemberForm.addEventListener('submit', handleInviteMember);
@@ -820,7 +835,7 @@
             transactionTypeSelect.addEventListener('change', populateCategorySelect);
             tableBody.addEventListener('click', handleDelete);
 
-            onAuthStateChanged(auth, async (user) => {
+            onAuthStateChanged(authInstance, async (user) => {
                 console.log("onAuthStateChanged disparado. User:", user ? user.uid : 'null');
                 showScreen('loading'); 
                 if (user) {
@@ -864,10 +879,10 @@
                         populateManageHouseholdUI(); 
                     }
                     
-                    if(auth.currentUser) {
-                        const currentUserName = auth.currentUser.displayName || auth.currentUser.email || 'Usuário';
+                    if(authInstance.currentUser) { // Usar authInstance aqui
+                        const currentUserName = authInstance.currentUser.displayName || authInstance.currentUser.email || 'Usuário';
                         userGreetingEl.textContent = `Bem-vindo(a), ${currentUserName}!`;
-                        userInfoEl.textContent = `Logado como: ${auth.currentUser.email}`;
+                        userInfoEl.textContent = `Logado como: ${authInstance.currentUser.email}`;
                         userInfoEl.classList.remove('hidden-section');
                         logoutBtn.classList.remove('hidden-section');
                     }
@@ -887,7 +902,7 @@
                 }
             });
             
-            if (!auth.currentUser) {
+            if (!authInstance.currentUser) { // Usar authInstance aqui
                 showScreen('auth');
             } else {
                  showScreen('loading'); 
