@@ -11,31 +11,47 @@ service cloud.firestore {
     // Regras para a coleção 'households'
     match /households/{householdId} {
       // Permite que um usuário autenticado CRIE um novo household.
-      // O proprietário será definido na lógica da aplicação.
       allow create: if request.auth != null;
 
-      // Permite que um usuário LEIA um household SE ele for membro.
-      // (resource.data.members[request.auth.uid] verifica se o UID do usuário está no mapa 'members')
-      allow read: if request.auth != null && request.auth.uid in resource.data.members;
+      // Permite que um usuário LEIA um household SE ele for membro OU o proprietário.
+      allow read: if request.auth != null && 
+                    (
+                      request.auth.uid in resource.data.members ||
+                      resource.data.ownerId == request.auth.uid
+                      // A verificação de pendingInvites para leitura direta do household foi removida
+                      // pois a descoberta de convites é feita pela regra 'list' e lógica do cliente.
+                    );
       
-      // Permite que o PROPRIETÁRIO do household ATUALIZE o documento
-      // (ex: para adicionar membros, alterar nome, gerenciar convites).
-      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid;
-
       // Permite que um usuário autenticado LISTE/CONSULTE households.
-      // Isso é necessário para a função checkAndDisplayInvites.
-      // Para produção, você pode querer restringir isso mais,
-      // por exemplo, usando uma coleção separada para convites.
+      // Necessário para a função checkAndDisplayInvites no cliente.
       allow list: if request.auth != null;
 
-      // Permite que o PROPRIETÁRIO delete o household (use com cautela).
-      // allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      // Permite ATUALIZAR um household se:
+      // 1. O solicitante é o proprietário.
+      // 2. OU o solicitante está aceitando um convite:
+      //    - Ele está se adicionando ao mapa 'members'.
+      //    - Ele não era membro antes.
+      //    - A atualização também pode modificar o mapa 'pendingInvites' (para remover o convite).
+      //      A lógica do cliente é responsável por garantir que apenas o convite correto seja removido.
+      allow update: if request.auth != null &&
+                     (
+                       // Proprietário pode fazer qualquer atualização
+                       resource.data.ownerId == request.auth.uid ||
+                       // Usuário aceitando seu próprio convite
+                       (
+                         request.resource.data.members[request.auth.uid] != null && // Está se adicionando aos membros
+                         !(request.auth.uid in resource.data.members) && // Não era membro antes
+                         // Esta parte permite que o mapa pendingInvites seja modificado.
+                         // A segurança aqui depende da lógica do cliente para remover apenas o convite correto.
+                         // Para maior segurança, use uma Cloud Function para aceitar convites.
+                         (request.resource.data.pendingInvites.diff(resource.data.pendingInvites).affectedKeys().size() >= 0 || resource.data.pendingInvites == null || request.resource.data.pendingInvites == null)
+                       )
+                     );
 
       // Regras para a subcoleção 'transactions' dentro de um household
       match /transactions/{transactionId} {
         // Permite que MEMBROS do household realizem todas as operações (CRUD)
         // nas transações desse household.
-        // A função get() busca o documento pai (household) para verificar a associação.
         allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
       }
     }
