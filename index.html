@@ -171,7 +171,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, initializeAuth, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // Adicionado initializeAuth, indexedDBLocalPersistence
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, initializeAuth, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; 
         import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, setLogLevel, writeBatch, getDoc, updateDoc, arrayUnion, getDocs, where, runTransaction, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -190,7 +190,7 @@
             
             const app = initializeApp(firebaseConfigProvided);
             const db = getFirestore(app);
-            let authInstance; // Renomeado para authInstance para evitar conflito com a variável auth global do Firebase
+            let authInstance; 
             try {
                 authInstance = initializeAuth(app, {
                     persistence: indexedDBLocalPersistence 
@@ -200,9 +200,9 @@
                 console.error("Erro crítico ao inicializar Firebase Auth com persistência:", e);
                 alert("Não foi possível inicializar o sistema de autenticação devido a restrições de armazenamento do navegador. Por favor, verifique as configurações de cookies e privacidade do seu navegador (especialmente se cookies de terceiros estão bloqueados) e tente recarregar a página.");
                 loadingOverlay.classList.add('hidden-section');
-                showScreen('auth'); // Mostra a tela de auth para que o usuário não fique preso no loading
+                showScreen('auth'); 
                 showAuthError('login', "Erro de armazenamento do navegador. Verifique as configurações.");
-                return; // Impede o resto do script de rodar se o Auth não puder ser inicializado
+                return; 
             }
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfigProvided.projectId || 'gestao-de-lancamentos-fallback';
@@ -357,6 +357,7 @@
                     case 'auth/popup-blocked': return 'O pop-up de login foi bloqueado pelo navegador. Por favor, habilite os pop-ups para este site.';
                     case 'auth/storage-unsupported': return 'O navegador não suporta armazenamento para persistência do login. Tente um navegador diferente ou verifique as configurações.';
                     case 'auth/internal-error': return 'Ocorreu um erro interno no sistema de autenticação. Tente novamente.';
+                    case 'auth/argument-error': return 'Erro de argumento na função de autenticação. Verifique o console.';
                     default: return 'Ocorreu um erro de autenticação. Tente novamente. Código: ' + errorCode;
                 }
             }
@@ -819,8 +820,18 @@
                 try { await createUserWithEmailAndPassword(authInstance, email, password); toggleAuthForms(true); loginEmailInput.value = email; loginPasswordInput.value = ''; loginErrorEl.textContent = "Registro realizado! Faça o login."; showScreen('auth'); } catch (error) { console.error("Erro no registro E-mail/Senha:", error); showAuthError('register', traduireErroAuth(error.code)); showScreen('auth'); } 
             });
             googleSignInBtn.addEventListener('click', async () => { 
-                clearAuthErrors(); showScreen('loading'); const provider = new GoogleAuthProvider();
-                try { await signInWithPopup(authInstance, provider); } catch (error) { console.error("Erro no login com Google:", error); showAuthError('google', traduireErroAuth(error.code)); showScreen('auth');} 
+                clearAuthErrors(); showScreen('loading'); 
+                const provider = new GoogleAuthProvider(); 
+                console.log("Instância de GoogleAuthProvider criada.");
+                try { 
+                    console.log("Tentando signInWithPopup com authInstance:", authInstance);
+                    await signInWithPopup(authInstance, provider); 
+                    console.log("signInWithPopup bem-sucedido.");
+                } catch (error) { 
+                    console.error("Erro no login com Google:", error, "Código:", error.code); 
+                    showAuthError('google', traduireErroAuth(error.code)); 
+                    showScreen('auth');
+                } 
             });
             logoutBtn.addEventListener('click', async () => {
                 showScreen('loading'); try { await signOut(authInstance); } catch (error) { console.error("Erro no logout:", error); alert("Erro ao sair."); showScreen('auth'); } 
@@ -869,7 +880,8 @@
                                 });
                                 console.log("Perfil de usuário criado/atualizado para:", userId);
                             } catch (profileError) {
-                                console.error("Erro ao criar/atualizar perfil do usuário:", profileError);
+                                console.error("Erro ao criar/atualizar perfil do usuário:", profileError, "Detalhes:", profileError.message, profileError.stack);
+                                alert("Erro ao configurar perfil do usuário. Verifique o console.");
                             }
                         }
                         activeHouseholdId = null; householdData = null;
@@ -879,7 +891,7 @@
                         populateManageHouseholdUI(); 
                     }
                     
-                    if(authInstance.currentUser) { // Usar authInstance aqui
+                    if(authInstance.currentUser) { 
                         const currentUserName = authInstance.currentUser.displayName || authInstance.currentUser.email || 'Usuário';
                         userGreetingEl.textContent = `Bem-vindo(a), ${currentUserName}!`;
                         userInfoEl.textContent = `Logado como: ${authInstance.currentUser.email}`;
@@ -902,7 +914,7 @@
                 }
             });
             
-            if (!authInstance.currentUser) { // Usar authInstance aqui
+            if (!authInstance.currentUser) { 
                 showScreen('auth');
             } else {
                  showScreen('loading'); 
