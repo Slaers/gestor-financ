@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permite que um usuário autenticado crie, leia, atualize e delete
+    // documentos APENAS na sua própria subcoleção 'transactions'.
+    match /artifacts/{appId}/users/{userIdFromPath}/{transactions}/{transactionId} {
+      allow read, write: if request.auth != null && request.auth.uid == userIdFromPath;
+    }
+    // Você pode precisar de uma regra mais geral para permitir a criação
+    // das coleções pai (artifacts, users) se elas não existirem.
+    // No entanto, a regra acima para 'transactions' já implica que o usuário
+    // pode criar o caminho até lá, DESDE QUE ele esteja autenticado e
+    // o userIdFromPath corresponda ao seu request.auth.uid.
+  }
+}

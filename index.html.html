@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor Financeiro para Casal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; height: 300px; max-height: 40vh; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5; /* indigo-600 */
+            animation: spin 1s ease infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .hidden-section { display: none !important; }
+        .google-btn-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="%23EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="%234285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="%23FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="%2334A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div id="loading-overlay" class="overlay hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div id="auth-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 p-4">
+        <div class="w-full max-w-md">
+            <div class="bg-white p-8 rounded-xl shadow-xl mb-6">
+                <h2 id="auth-title" class="text-3xl font-bold text-center text-slate-800 mb-2">Login</h2>
+                <p id="auth-subtitle" class="text-center text-slate-500 mb-8">Acesse seu painel financeiro.</p>
+                
+                <form id="login-form" class="">
+                    <div class="mb-4">
+                        <label for="login-email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                        <input type="email" id="login-email" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="seu@email.com">
+                    </div>
+                    <div class="mb-6">
+                        <label for="login-password" class="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+                        <input type="password" id="login-password" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors mb-4">Entrar</button>
+                    <p id="login-error" class="text-red-500 text-sm text-center h-4"></p>
+                </form>
+
+                <form id="register-form" class="hidden-section">
+                    <div class="mb-4">
+                        <label for="register-email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                        <input type="email" id="register-email" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="seu@email.com">
+                    </div>
+                    <div class="mb-4">
+                        <label for="register-password" class="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+                        <input type="password" id="register-password" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <div class="mb-6">
+                        <label for="register-confirm-password" class="block text-sm font-medium text-slate-700 mb-1">Confirmar Senha</label>
+                        <input type="password" id="register-confirm-password" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Repita a senha">
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors mb-4">Registrar</button>
+                    <p id="register-error" class="text-red-500 text-sm text-center h-4"></p>
+                </form>
+
+                <div class="mt-6 pt-6 border-t border-slate-200">
+                    <p class="text-center text-sm text-slate-500 mb-3">Ou entre com</p>
+                    <button id="google-signin-btn" class="w-full flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+                        <span class="google-btn-icon"></span>
+                        <span>Entrar com Google</span>
+                    </button>
+                    <p id="google-signin-error" class="text-red-500 text-sm text-center h-4 mt-2"></p>
+                </div>
+
+            </div>
+            <p class="text-center text-sm text-slate-600">
+                <span id="auth-prompt-login">Não tem uma conta? <button id="show-register-form-btn" class="font-semibold text-indigo-600 hover:underline">Registre-se</button></span>
+                <span id="auth-prompt-register" class="hidden-section">Já tem uma conta? <button id="show-login-form-btn" class="font-semibold text-indigo-600 hover:underline">Faça Login</button></span>
+            </p>
+        </div>
+    </div>
+
+
+    <div id="app-content" class="hidden-section container mx-auto p-4 md:p-8">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Painel Financeiro</h1>
+                <p id="user-greeting" class="text-slate-500 mt-1">Gestão de Lançamentos do Mês</p>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center gap-4 mt-4 md:mt-0">
+                <div id="user-info" class="text-sm text-slate-600 hidden-section order-first sm:order-none"></div>
+                <select id="month-filter" class="bg-white border border-slate-300 rounded-lg shadow-sm p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </select>
+                <button id="add-transaction-btn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                    <span>+</span>
+                    <span>Adicionar</span>
+                </button>
+                <button id="logout-btn" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-600 transition-colors flex items-center gap-2">
+                    <span>Sair</span>
+                    <span class="text-xl">&#x23CF;</span> </button>
+            </div>
+        </header>
+
+        <main>
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-100">
+                    <h2 class="text-sm font-medium text-slate-500">Receitas Totais</h2>
+                    <p id="total-income" class="text-3xl font-bold text-green-600 mt-2">R$ 0,00</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-100">
+                    <h2 class="text-sm font-medium text-slate-500">Despesas Totais</h2>
+                    <p id="total-expense" class="text-3xl font-bold text-red-600 mt-2">R$ 0,00</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-100">
+                    <h2 class="text-sm font-medium text-slate-500">Saldo do Mês</h2>
+                    <p id="balance" class="text-3xl font-bold text-slate-700 mt-2">R$ 0,00</p>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
+                <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow-md border border-slate-100">
+                    <h3 class="text-lg font-semibold mb-4">Despesas por Categoria</h3>
+                    <div class="chart-container">
+                        <canvas id="expenses-by-category-chart"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-slate-100">
+                    <h3 class="text-lg font-semibold mb-4">Receitas vs Despesas</h3>
+                     <div class="chart-container">
+                        <canvas id="income-vs-expense-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="bg-white p-6 rounded-xl shadow-md border border-slate-100">
+                <h3 class="text-lg font-semibold mb-4">Últimos Lançamentos</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="border-b-2 border-slate-200">
+                            <tr>
+                                <th class="p-3 text-sm font-semibold text-slate-500">Data</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500">Descrição</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500">Categoria</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 text-right">Valor</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500">Responsável</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-table-body">
+                           </tbody>
+                    </table>
+                     <p id="no-transactions-msg" class="text-center text-slate-500 py-8">Nenhum lançamento para o período selecionado.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+        <div id="modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-md p-8 transform transition-all -translate-y-16 opacity-0">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Novo Lançamento</h2>
+                <button id="close-modal-btn" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <form id="transaction-form">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="transaction-type" class="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
+                        <select id="transaction-type" name="type" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                            <option value="Despesa">Despesa</option>
+                            <option value="Receita">Receita</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transaction-person" class="block text-sm font-medium text-slate-700 mb-1">Responsável</label>
+                        <select id="transaction-person" name="person" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="transaction-description" class="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+                    <input type="text" id="transaction-description" name="description" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label for="transaction-amount" class="block text-sm font-medium text-slate-700 mb-1">Valor</label>
+                        <input type="number" step="0.01" id="transaction-amount" name="amount" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label for="transaction-date" class="block text-sm font-medium text-slate-700 mb-1">Data</label>
+                        <input type="date" id="transaction-date" name="date" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                </div>
+                 <div class="mb-6">
+                    <label for="transaction-category" class="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+                    <select id="transaction-category" name="category" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">Salvar Lançamento</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut,
+            GoogleAuthProvider, // Adicionado
+            signInWithPopup     // Adicionado
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            doc, 
+            deleteDoc, 
+            onSnapshot, 
+            query, 
+            orderBy, 
+            serverTimestamp, 
+            setLogLevel 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            
+            const firebaseConfig = {
+                apiKey: "AIzaSyBEE49m18ujHj2MneCZKVoyuKgrV5okCYA",
+                authDomain: "gestao-de-lancamentos.firebaseapp.com",
+                projectId: "gestao-de-lancamentos",
+                storageBucket: "gestao-de-lancamentos.firebasestorage.app",
+                messagingSenderId: "489670680660",
+                appId: "1:489670680660:web:90e7a533fabcfaec620dc1",
+                measurementId: "G-QZFQS419FH"
+            };
+            console.log("Usando Firebase Config:", JSON.stringify(firebaseConfig, null, 2));
+            
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            // const analytics = getAnalytics(app); 
+            
+            const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId || 'gestao-de-lancamentos-fallback';
+            console.log("App ID (para path do Firestore, se usado em 'artifacts'):", appId);
+
+            let userId = null;
+            let transactionsCollectionRef = null;
+            let unsubscribeFirestore = null; 
+
+            // UI Sections
+            const authSection = document.getElementById('auth-section');
+            const appContentSection = document.getElementById('app-content');
+
+            // Auth Form Elements
+            const authTitle = document.getElementById('auth-title');
+            const authSubtitle = document.getElementById('auth-subtitle');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const loginEmailInput = document.getElementById('login-email');
+            const loginPasswordInput = document.getElementById('login-password');
+            const registerEmailInput = document.getElementById('register-email');
+            const registerPasswordInput = document.getElementById('register-password');
+            const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
+            const loginErrorEl = document.getElementById('login-error');
+            const registerErrorEl = document.getElementById('register-error');
+            const showRegisterFormBtn = document.getElementById('show-register-form-btn');
+            const showLoginFormBtn = document.getElementById('show-login-form-btn');
+            const authPromptLogin = document.getElementById('auth-prompt-login');
+            const authPromptRegister = document.getElementById('auth-prompt-register');
+            const googleSignInBtn = document.getElementById('google-signin-btn'); // Adicionado
+            const googleSignInErrorEl = document.getElementById('google-signin-error'); // Adicionado
+            
+            // App Content Elements
+            const logoutBtn = document.getElementById('logout-btn');
+            const userInfoEl = document.getElementById('user-info');
+            const userGreetingEl = document.getElementById('user-greeting');
+
+
+            const config = {
+                people: ['Andrei', 'Karina', 'Conta Conjunta/Casa'],
+                expenseCategories: [
+                    'Moradia', 'Alimentação', 'Transporte', 'Lazer (Casal)', 'Saúde',
+                    'Despesa Andrei Pessoal', 'Despesa Karina Pessoal', 'Contas da Casa',
+                    'Internet e TV', 'Educação' , 'Presentes', 'Investimentos (Saída)', 'Outras Despesas'
+                ],
+                incomeCategories: [
+                    'Salário Andrei', 'Salário Karina', 'Renda Extra Andrei',
+                    'Venda de Item', 'Outras Receitas'
+                ],
+            };
+
+            let transactions = []; 
+            let selectedMonthYear;
+            let charts = {};
+
+            const monthFilter = document.getElementById('month-filter');
+            const totalIncomeEl = document.getElementById('total-income');
+            const totalExpenseEl = document.getElementById('total-expense');
+            const balanceEl = document.getElementById('balance');
+            const tableBody = document.getElementById('transactions-table-body');
+            const noTransactionsMsg = document.getElementById('no-transactions-msg');
+
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            const addTransactionBtn = document.getElementById('add-transaction-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const transactionForm = document.getElementById('transaction-form');
+            const transactionTypeSelect = document.getElementById('transaction-type');
+            const transactionCategorySelect = document.getElementById('transaction-category');
+            const transactionPersonSelect = document.getElementById('transaction-person');
+            const transactionDateInput = document.getElementById('transaction-date');
+
+            function showAuthError(formType, message) {
+                let el;
+                if (formType === 'login') el = loginErrorEl;
+                else if (formType === 'register') el = registerErrorEl;
+                else if (formType === 'google') el = googleSignInErrorEl;
+                else return;
+                el.textContent = message;
+            }
+
+            function clearAuthErrors() {
+                loginErrorEl.textContent = '';
+                registerErrorEl.textContent = '';
+                googleSignInErrorEl.textContent = '';
+            }
+
+            function toggleAuthForms(showLogin = true) {
+                clearAuthErrors();
+                if (showLogin) {
+                    loginForm.classList.remove('hidden-section');
+                    registerForm.classList.add('hidden-section');
+                    authPromptLogin.classList.remove('hidden-section');
+                    authPromptRegister.classList.add('hidden-section');
+                    authTitle.textContent = "Login";
+                    authSubtitle.textContent = "Acesse seu painel financeiro.";
+                } else {
+                    loginForm.classList.add('hidden-section');
+                    registerForm.classList.remove('hidden-section');
+                    authPromptLogin.classList.add('hidden-section');
+                    authPromptRegister.classList.remove('hidden-section');
+                    authTitle.textContent = "Registrar";
+                    authSubtitle.textContent = "Crie sua conta para começar.";
+                }
+            }
+
+            showRegisterFormBtn.addEventListener('click', () => toggleAuthForms(false));
+            showLoginFormBtn.addEventListener('click', () => toggleAuthForms(true));
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearAuthErrors();
+                loadingOverlay.classList.remove('hidden');
+                const email = loginEmailInput.value;
+                const password = loginPasswordInput.value;
+                try {
+                    console.log("Tentando login com E-mail/Senha:", email);
+                    await signInWithEmailAndPassword(auth, email, password);
+                    console.log("Login com E-mail/Senha bem-sucedido para:", email);
+                } catch (error) {
+                    console.error("Erro no login E-mail/Senha:", error, "Código:", error.code);
+                    showAuthError('login', traduireErroAuth(error.code));
+                } finally {
+                    loadingOverlay.classList.add('hidden');
+                }
+            });
+
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearAuthErrors();
+                const email = registerEmailInput.value;
+                const password = registerPasswordInput.value;
+                const confirmPassword = registerConfirmPasswordInput.value;
+
+                if (password !== confirmPassword) {
+                    showAuthError('register', "As senhas não coincidem.");
+                    return;
+                }
+                if (password.length < 6) {
+                    showAuthError('register', "A senha deve ter no mínimo 6 caracteres.");
+                    return;
+                }
+                loadingOverlay.classList.remove('hidden');
+                try {
+                    console.log("Tentando registrar com E-mail/Senha:", email);
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    console.log("Registro com E-mail/Senha bem-sucedido para:", email);
+                    toggleAuthForms(true); 
+                    loginEmailInput.value = email; 
+                    loginPasswordInput.value = '';
+                    loginErrorEl.textContent = "Registro realizado! Faça o login.";
+                } catch (error) {
+                    console.error("Erro no registro E-mail/Senha:", error, "Código:", error.code);
+                    showAuthError('register', traduireErroAuth(error.code));
+                } finally {
+                    loadingOverlay.classList.add('hidden');
+                }
+            });
+
+            googleSignInBtn.addEventListener('click', async () => {
+                clearAuthErrors();
+                loadingOverlay.classList.remove('hidden');
+                const provider = new GoogleAuthProvider();
+                try {
+                    console.log("Tentando login com Google...");
+                    await signInWithPopup(auth, provider);
+                    console.log("Login com Google bem-sucedido.");
+                    // onAuthStateChanged vai cuidar de mostrar o app
+                } catch (error) {
+                    console.error("Erro no login com Google:", error, "Código:", error.code);
+                    showAuthError('google', traduireErroAuth(error.code));
+                } finally {
+                    loadingOverlay.classList.add('hidden');
+                }
+            });
+
+            logoutBtn.addEventListener('click', async () => {
+                loadingOverlay.classList.remove('hidden');
+                try {
+                    console.log("Fazendo logout...");
+                    await signOut(auth);
+                    console.log("Logout bem-sucedido.");
+                } catch (error) {
+                    console.error("Erro no logout:", error);
+                    alert("Erro ao sair.");
+                } finally {
+                    loadingOverlay.classList.add('hidden');
+                }
+            });
+            
+            function traduireErroAuth(errorCode) {
+                switch (errorCode) {
+                    case 'auth/invalid-email': return 'Formato de email inválido.';
+                    case 'auth/user-disabled': return 'Este usuário foi desabilitado.';
+                    case 'auth/user-not-found': return 'Usuário não encontrado. Verifique o email ou registre-se.';
+                    case 'auth/wrong-password': return 'Senha incorreta.';
+                    case 'auth/email-already-in-use': return 'Este email já está em uso por outra conta.';
+                    case 'auth/weak-password': return 'Senha muito fraca. Use pelo menos 6 caracteres.';
+                    case 'auth/operation-not-allowed': return 'Este método de login não está habilitado no Firebase.';
+                    case 'auth/missing-password': return 'Por favor, insira a senha.';
+                    case 'auth/invalid-credential': return 'Credenciais inválidas (email ou senha).';
+                    case 'auth/configuration-not-found': return 'Erro de configuração do Firebase Auth. Verifique o console do Firebase.';
+                    case 'auth/popup-closed-by-user': return 'Login com Google cancelado pelo usuário.';
+                    case 'auth/account-exists-with-different-credential': return 'Já existe uma conta com este email, mas com um método de login diferente (ex: senha, e não Google). Tente o outro método.';
+                    case 'auth/cancelled-popup-request': return 'Múltiplas tentativas de login com pop-up. Por favor, tente novamente.';
+                    case 'auth/popup-blocked': return 'O pop-up de login foi bloqueado pelo navegador. Por favor, habilite os pop-ups para este site.';
+                    default: return 'Ocorreu um erro de autenticação. Tente novamente. Código: ' + errorCode;
+                }
+            }
+
+            const formatCurrency = (value) => {
+                const val = Math.abs(value);
+                const sign = value < 0 ? '- ' : '';
+                return `${sign}R$ ${val.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
+            };
+
+            const populateMonthFilter = () => {
+                console.log("Populando filtro de mês...");
+                const months = new Set();
+                transactions.forEach(t => {
+                    if (t.date) months.add(t.date.substring(0, 7));
+                });
+                
+                if (months.size === 0) {
+                   console.log("Nenhum mês encontrado, usando mês atual.");
+                   const now = new Date();
+                   const month = String(now.getMonth() + 1).padStart(2, '0');
+                   const year = now.getFullYear();
+                   months.add(`${year}-${month}`);
+                }
+
+                const sortedMonths = Array.from(months).sort().reverse();
+                const currentFilterValue = selectedMonthYear || monthFilter.value;
+                monthFilter.innerHTML = '';
+
+                sortedMonths.forEach(monthYear => {
+                    const [year, month] = monthYear.split('-');
+                    const option = document.createElement('option');
+                    option.value = monthYear;
+                    const date = new Date(year, month - 1, 1);
+                    option.textContent = date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                    monthFilter.appendChild(option);
+                });
+                
+                if (sortedMonths.includes(currentFilterValue)) {
+                    monthFilter.value = currentFilterValue;
+                    selectedMonthYear = currentFilterValue;
+                } else if (sortedMonths.length > 0) {
+                    monthFilter.value = sortedMonths[0];
+                    selectedMonthYear = sortedMonths[0];
+                } else { 
+                    const now = new Date();
+                    const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    if (!monthFilter.querySelector(`option[value="${currentMonthYear}"]`)) {
+                        const option = document.createElement('option');
+                        option.value = currentMonthYear;
+                        option.textContent = now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                        monthFilter.appendChild(option);
+                    }
+                    monthFilter.value = currentMonthYear;
+                    selectedMonthYear = currentMonthYear;
+                }
+                console.log("Mês selecionado para o filtro:", selectedMonthYear);
+            };
+
+            const populateCategorySelect = () => {
+                const currentType = transactionTypeSelect.value;
+                const categories = currentType === 'Receita' ? config.incomeCategories : config.expenseCategories;
+                transactionCategorySelect.innerHTML = '';
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    transactionCategorySelect.appendChild(option);
+                });
+            };
+            
+            const populatePersonSelect = () => {
+                transactionPersonSelect.innerHTML = '';
+                config.people.forEach(person => {
+                    const option = document.createElement('option');
+                    option.value = person;
+                    option.textContent = person;
+                    transactionPersonSelect.appendChild(option);
+                });
+            };
+
+            const renderTable = (data) => {
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    noTransactionsMsg.classList.remove('hidden');
+                    return;
+                }
+                noTransactionsMsg.classList.add('hidden');
+                
+                data.forEach(t => {
+                    const row = document.createElement('tr');
+                    row.className = `border-b border-slate-100 ${t.type === 'Receita' ? 'bg-green-50/50' : 'bg-red-50/50'}`;
+                    const displayDate = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data inválida';
+                    row.innerHTML = `
+                        <td class="p-3 text-slate-600">${displayDate}</td>
+                        <td class="p-3 font-medium text-slate-800">${t.description || ''}</td>
+                        <td class="p-3 text-slate-600">${t.category || ''}</td>
+                        <td class="p-3 font-semibold text-right ${t.type === 'Receita' ? 'text-green-700' : 'text-red-700'}">${formatCurrency(t.amount || 0)}</td>
+                        <td class="p-3 text-slate-600">${t.person || ''}</td>
+                        <td class="p-3 text-center">
+                            <button data-id="${t.id}" class="delete-btn text-slate-400 hover:text-red-600">&#10005;</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            };
+            
+            const destroyCharts = () => {
+                Object.values(charts).forEach(chart => {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                });
+                charts = {};
+            };
+
+            const renderCharts = (income, expense, expensesByCategory) => {
+                destroyCharts();
+                
+                const categoryNames = Object.keys(expensesByCategory);
+                const categoryValues = Object.values(expensesByCategory);
+
+                if (document.getElementById('expenses-by-category-chart')) {
+                    const ctxCategory = document.getElementById('expenses-by-category-chart').getContext('2d');
+                    charts.categoryChart = new Chart(ctxCategory, {
+                        type: 'doughnut',
+                        data: {
+                            labels: categoryNames.length > 0 ? categoryNames : ['Nenhuma despesa'],
+                            datasets: [{
+                                data: categoryValues.length > 0 ? categoryValues : [1], 
+                                backgroundColor: categoryValues.length > 0 ? ['#4f46e5', '#7c3aed', '#db2777', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6'] : ['#e5e7eb'],
+                                borderColor: '#ffffff',
+                                borderWidth: 4,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'right', labels: { boxWidth: 20, padding: 20 } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) { label += ': '; }
+                                            if (context.parsed !== null) {
+                                                label += formatCurrency(context.parsed);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (document.getElementById('income-vs-expense-chart')) {
+                    const ctxIncomeVsExpense = document.getElementById('income-vs-expense-chart').getContext('2d');
+                    charts.incomeVsExpenseChart = new Chart(ctxIncomeVsExpense, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Fluxo de Caixa'],
+                            datasets: [
+                                { label: 'Receitas', data: [income], backgroundColor: '#22c55e', borderRadius: 4 },
+                                { label: 'Despesas', data: [expense], backgroundColor: '#ef4444', borderRadius: 4 }
+                            ]
+                        },
+                        options: {
+                           responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: true } },
+                            scales: { y: { beginAtZero: true, ticks: { callback: (value) => formatCurrency(value) } } }
+                        }
+                    });
+                }
+            };
+
+            const updateDashboard = () => {
+                console.log("Atualizando dashboard para o mês:", selectedMonthYear);
+                if (!selectedMonthYear) {
+                    console.warn("Mês não selecionado no updateDashboard, limpando dados da UI.");
+                    totalIncomeEl.textContent = formatCurrency(0);
+                    totalExpenseEl.textContent = formatCurrency(0);
+                    balanceEl.textContent = formatCurrency(0);
+                    renderTable([]);
+                    renderCharts(0, 0, {});
+                    return;
+                }
+                const filteredTransactions = transactions.filter(t => t.date && t.date.startsWith(selectedMonthYear));
+                console.log(`Total de transações (todas): ${transactions.length}, Transações filtradas para ${selectedMonthYear}: ${filteredTransactions.length}`);
+                
+                let totalIncome = 0;
+                let totalExpense = 0;
+                const expensesByCategory = {};
+
+                filteredTransactions.forEach(t => {
+                    if (t.type === 'Receita') {
+                        totalIncome += t.amount;
+                    } else {
+                        totalExpense += t.amount;
+                        if(expensesByCategory[t.category]){
+                           expensesByCategory[t.category] += t.amount;
+                        } else {
+                           expensesByCategory[t.category] = t.amount;
+                        }
+                    }
+                });
+                
+                const balance = totalIncome - totalExpense;
+
+                totalIncomeEl.textContent = formatCurrency(totalIncome);
+                totalExpenseEl.textContent = formatCurrency(totalExpense);
+                balanceEl.textContent = formatCurrency(balance);
+                balanceEl.classList.toggle('text-red-600', balance < 0);
+                balanceEl.classList.toggle('text-slate-700', balance >= 0);
+
+                renderTable(filteredTransactions.sort((a,b) => new Date(b.date) - new Date(a.date)));
+                renderCharts(totalIncome, totalExpense, expensesByCategory);
+                console.log("Dashboard atualizado.");
+            };
+
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                if (!userId || !transactionsCollectionRef) {
+                    console.error("Form Submit: Usuário não logado ou referência da coleção não inicializada. UserID:", userId);
+                    alert("Erro: Você precisa estar logado para adicionar um lançamento. Tente novamente.");
+                    return;
+                }
+                console.log("Submetendo formulário de transação...");
+                const formData = new FormData(transactionForm);
+                const docData = {
+                    date: formData.get('date'),
+                    description: formData.get('description'),
+                    category: formData.get('category'),
+                    amount: parseFloat(formData.get('amount')),
+                    type: formData.get('type'),
+                    person: formData.get('person'),
+                    monthYear: formData.get('date').substring(0, 7),
+                    createdAt: serverTimestamp()
+                };
+                
+                try {
+                    loadingOverlay.classList.remove('hidden');
+                    console.log("Adicionando documento ao Firestore:", docData, "para userId:", userId);
+                    await addDoc(transactionsCollectionRef, docData);
+                    console.log("Documento adicionado com sucesso.");
+                    closeModal();
+                    const newMonthYear = docData.monthYear;
+                     if (!Array.from(monthFilter.options).some(opt => opt.value === newMonthYear)) {
+                        console.log("Novo mês detectado, filtro será repopulado pelo onSnapshot.");
+                     }
+                    monthFilter.value = newMonthYear; 
+                    selectedMonthYear = newMonthYear; 
+                } catch (error) {
+                    console.error("Erro ao adicionar transação: ", error);
+                    alert("Ocorreu um erro ao salvar o lançamento. Verifique suas regras de segurança do Firestore.");
+                } finally {
+                    loadingOverlay.classList.add('hidden');
+                }
+            };
+            
+            async function handleDelete(e) {
+                if (e.target.classList.contains('delete-btn')) {
+                    const id = e.target.dataset.id;
+                     console.log(`Tentando deletar transação com ID: ${id}`);
+                    if (!userId || !transactionsCollectionRef) {
+                        console.error("Delete: Usuário não logado ou referência da coleção não inicializada.");
+                        alert("Erro: Você precisa estar logado para deletar. Tente novamente.");
+                        return;
+                    }
+                    if (confirm("Tem certeza que deseja excluir este lançamento?")) {
+                        try {
+                            loadingOverlay.classList.remove('hidden');
+                            const docRef = doc(db, `artifacts/${appId}/users/${userId}/transactions`, id);
+                            await deleteDoc(docRef);
+                            console.log(`Transação ${id} deletada com sucesso.`);
+                        } catch (error) {
+                            console.error("Erro ao deletar transação: ", error);
+                            alert("Ocorreu um erro ao excluir o lançamento. Verifique suas regras de segurança do Firestore.");
+                        } finally {
+                            loadingOverlay.classList.add('hidden');
+                        }
+                    }
+                }
+            };
+            
+            const openModal = () => {
+                transactionForm.reset();
+                const today = new Date().toISOString().split('T')[0];
+                transactionDateInput.value = today;
+                transactionTypeSelect.value = "Despesa"; 
+                populateCategorySelect(); 
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    modalContent.classList.remove('-translate-y-16', 'opacity-0');
+                    modalContent.classList.add('translate-y-0', 'opacity-100');
+                }, 10);
+            };
+
+            const closeModal = () => {
+                modalContent.classList.add('-translate-y-16', 'opacity-0');
+                modalContent.classList.remove('translate-y-0', 'opacity-100');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }, 300);
+            };
+
+            monthFilter.addEventListener('change', (e) => {
+                selectedMonthYear = e.target.value;
+                updateDashboard();
+            });
+
+            addTransactionBtn.addEventListener('click', openModal);
+            closeModalBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+            transactionForm.addEventListener('submit', handleFormSubmit);
+            transactionTypeSelect.addEventListener('change', populateCategorySelect);
+            tableBody.addEventListener('click', handleDelete);
+
+            async function initializeAppLogic() {
+                console.log("initializeAppLogic chamada. UserID:", userId);
+                if (!userId) {
+                    console.error("initializeAppLogic: UserID não definido. Não é possível buscar dados.");
+                     loadingOverlay.classList.add('hidden');
+                    return;
+                }
+                transactionsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/transactions`);
+                console.log("initializeAppLogic: Referência da coleção definida para:", `artifacts/${appId}/users/${userId}/transactions`);
+                
+                if (unsubscribeFirestore) {
+                    console.log("Cancelando listener Firestore anterior.");
+                    unsubscribeFirestore(); 
+                }
+
+                console.log("Configurando listener onSnapshot para Firestore.");
+                const q = query(transactionsCollectionRef, orderBy("createdAt", "desc"));
+                unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+                    console.log("onSnapshot: Dados recebidos do Firestore.");
+                    const firestoreTransactions = [];
+                    snapshot.forEach((doc) => {
+                        firestoreTransactions.push({ id: doc.id, ...doc.data() });
+                    });
+                    transactions = firestoreTransactions;
+                    console.log(`onSnapshot: ${transactions.length} transações carregadas.`);
+                    
+                    const currentSelectedMonthBeforeRepopulate = selectedMonthYear;
+                    populateMonthFilter(); 
+                    
+                    if (currentSelectedMonthBeforeRepopulate && Array.from(monthFilter.options).some(opt => opt.value === currentSelectedMonthBeforeRepopulate)) {
+                        monthFilter.value = currentSelectedMonthBeforeRepopulate;
+                        selectedMonthYear = currentSelectedMonthBeforeRepopulate;
+                         console.log("onSnapshot: Mês selecionado restaurado para:", selectedMonthYear);
+                    } else if (monthFilter.options.length > 0) {
+                        selectedMonthYear = monthFilter.value; 
+                        console.log("onSnapshot: Mês selecionado definido para o valor do filtro:", selectedMonthYear);
+                    } else {
+                        const now = new Date();
+                        selectedMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                        console.log("onSnapshot: Mês selecionado definido para mês atual (fallback):", selectedMonthYear);
+                    }
+                    
+                    updateDashboard();
+                    loadingOverlay.classList.add('hidden');
+                }, (error) => {
+                    console.error("Erro no listener onSnapshot: ", error, "Código:", error.code); 
+                    alert("Ocorreu um erro ao carregar os lançamentos: " + traduireErroAuth(error.code || 'firestore-error'));
+                    loadingOverlay.classList.add('hidden');
+                });
+
+                populatePersonSelect(); 
+                if(auth.currentUser) {
+                    const displayName = auth.currentUser.displayName;
+                    const email = auth.currentUser.email;
+                    const greetingName = displayName || email || 'Usuário';
+                    userGreetingEl.textContent = `Bem-vindo(a), ${greetingName}!`;
+                    userInfoEl.textContent = `Logado como: ${email}`;
+                    userInfoEl.classList.remove('hidden-section');
+                }
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                console.log("onAuthStateChanged disparado. User:", user ? user.uid : 'null');
+                loadingOverlay.classList.remove('hidden'); 
+                if (user) {
+                    userId = user.uid;
+                    clearAuthErrors(); // Limpa erros de formulários de auth
+                    authSection.classList.add('hidden-section');
+                    appContentSection.classList.remove('hidden-section');
+                    logoutBtn.classList.remove('hidden-section');
+                    await initializeAppLogic(); 
+                } else {
+                    userId = null;
+                    if (unsubscribeFirestore) {
+                        console.log("Usuário deslogado. Cancelando listener do Firestore.");
+                        unsubscribeFirestore();
+                        unsubscribeFirestore = null;
+                    }
+                    transactions = []; 
+                    selectedMonthYear = null; 
+                    populateMonthFilter(); 
+                    updateDashboard(); 
+                    authSection.classList.remove('hidden-section');
+                    appContentSection.classList.add('hidden-section');
+                    logoutBtn.classList.add('hidden-section');
+                    userInfoEl.classList.add('hidden-section');
+                    userInfoEl.textContent = '';
+                    userGreetingEl.textContent = "Gestão de Lançamentos do Mês";
+                    toggleAuthForms(true); 
+                    console.log("Usuário deslogado. Exibindo tela de autenticação.");
+                    loadingOverlay.classList.add('hidden');
+                }
+            });
+            
+            // Estado inicial: mostrar overlay e tela de login se não houver usuário
+            if (!auth.currentUser) {
+                console.log("Estado inicial: Nenhum usuário. Exibindo tela de auth.");
+                authSection.classList.remove('hidden-section');
+                appContentSection.classList.add('hidden-section');
+                loadingOverlay.classList.add('hidden'); // Esconde se não houver usuário para não ficar preso
+            }
+        });
+    </script>
+</body>
+</html>
