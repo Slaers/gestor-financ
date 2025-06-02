@@ -1,15 +1,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite que um usuário autenticado crie, leia, atualize e delete
-    // documentos APENAS na sua própria subcoleção 'transactions'.
-    match /artifacts/{appId}/users/{userIdFromPath}/{transactions}/{transactionId} {
-      allow read, write: if request.auth != null && request.auth.uid == userIdFromPath;
+
+    // Regras para a coleção 'users'
+    // Permite que um usuário leia e escreva apenas seu próprio documento de perfil.
+    match /users/{userIdRule} {
+      allow read, write: if request.auth != null && request.auth.uid == userIdRule;
     }
-    // Você pode precisar de uma regra mais geral para permitir a criação
-    // das coleções pai (artifacts, users) se elas não existirem.
-    // No entanto, a regra acima para 'transactions' já implica que o usuário
-    // pode criar o caminho até lá, DESDE QUE ele esteja autenticado e
-    // o userIdFromPath corresponda ao seu request.auth.uid.
+
+    // Regras para a coleção 'households'
+    match /households/{householdId} {
+      // Permite que um usuário autenticado CRIE um novo household.
+      // O proprietário será definido na lógica da aplicação.
+      allow create: if request.auth != null;
+
+      // Permite que um usuário LEIA um household SE ele for membro.
+      // (resource.data.members[request.auth.uid] verifica se o UID do usuário está no mapa 'members')
+      allow read: if request.auth != null && request.auth.uid in resource.data.members;
+      
+      // Permite que o PROPRIETÁRIO do household ATUALIZE o documento
+      // (ex: para adicionar membros, alterar nome, gerenciar convites).
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid;
+
+      // Permite que um usuário autenticado LISTE/CONSULTE households.
+      // Isso é necessário para a função checkAndDisplayInvites.
+      // Para produção, você pode querer restringir isso mais,
+      // por exemplo, usando uma coleção separada para convites.
+      allow list: if request.auth != null;
+
+      // Permite que o PROPRIETÁRIO delete o household (use com cautela).
+      // allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+
+      // Regras para a subcoleção 'transactions' dentro de um household
+      match /transactions/{transactionId} {
+        // Permite que MEMBROS do household realizem todas as operações (CRUD)
+        // nas transações desse household.
+        // A função get() busca o documento pai (household) para verificar a associação.
+        allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
+      }
+    }
   }
 }
