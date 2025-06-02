@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,115 +10,105 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; /* bg-slate-50 */ }
-        .chart-container { position: relative; width: 100%; height: 280px; max-height: 35vh; } /* Altura ajustada */
-        @media (min-width: 768px) { .chart-container { height: 320px; } }
-        @media (min-width: 1024px) { .chart-container { height: 350px; } }
-        .loading-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #0284c7; /* sky-600 */
-            animation: spin 1s ease infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .overlay { position: fixed; inset: 0; background-color: rgba(248, 250, 252, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .hidden-section { display: none !important; }
         /* Custom scrollbar for webkit browsers */
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; /* slate-100 */ border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; /* slate-300 */ border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; /* slate-400 */ }
+
+        /* Dark mode scrollbar */
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; /* slate-800 */ }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; /* slate-600 */ }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; /* slate-500 */ }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="font-sans bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200">
 
-    <div id="loading-overlay" class="overlay hidden-section">
-        <div class="loading-spinner"></div>
+    <div id="loading-overlay" class="fixed inset-0 bg-slate-50/80 flex items-center justify-center z-[9999] hidden dark:bg-slate-900/80">
+        <div class="border-4 border-black/10 w-9 h-9 rounded-full border-l-sky-600 animate-spin"></div>
     </div>
 
-    <div id="auth-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 p-4 hidden-section">
+    <div id="auth-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 p-4 hidden">
         <div class="w-full max-w-md">
-            <div class="bg-white p-8 rounded-xl shadow-2xl mb-6">
-                <h2 id="auth-title" class="text-3xl font-bold text-center text-slate-900 mb-2">Login</h2>
-                <p id="auth-subtitle" class="text-center text-slate-500 mb-8">Acesse seu painel financeiro.</p>
+            <div class="bg-white dark:bg-slate-700 p-8 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40 mb-6">
+                <h2 id="auth-title" class="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-2">Login</h2>
+                <p id="auth-subtitle" class="text-center text-slate-500 dark:text-slate-400 mb-8">Acesse seu painel financeiro.</p>
                 <form id="login-form" class="">
-                    <div class="mb-4"><label for="login-email" class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="login-email" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="seu@email.com"></div>
-                    <div class="mb-6"><label for="login-password" class="block text-sm font-medium text-slate-700 mb-1">Senha</label><input type="password" id="login-password" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="••••••••"></div>
-                    <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 transition-colors mb-4 shadow-sm">Entrar</button>
+                    <div class="mb-4"><label for="login-email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label><input type="email" id="login-email" required class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="seu@email.com"></div>
+                    <div class="mb-6"><label for="login-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Senha</label><input type="password" id="login-password" required class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="••••••••"></div>
+                    <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.03] mb-4 shadow-sm dark:shadow-black/30">Entrar</button>
                     <p id="login-error" class="text-rose-600 text-sm text-center h-4"></p>
                 </form>
-                <form id="register-form" class="hidden-section">
-                    <div class="mb-4"><label for="register-email" class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="register-email" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="seu@email.com"></div>
-                    <div class="mb-4"><label for="register-password" class="block text-sm font-medium text-slate-700 mb-1">Senha</label><input type="password" id="register-password" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="Mínimo 6 caracteres"></div>
-                    <div class="mb-6"><label for="register-confirm-password" class="block text-sm font-medium text-slate-700 mb-1">Confirmar Senha</label><input type="password" id="register-confirm-password" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="Repita a senha"></div>
-                    <button type="submit" class="w-full bg-emerald-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-emerald-600 transition-colors mb-4 shadow-sm">Registrar</button>
+                <form id="register-form" class="hidden">
+                    <div class="mb-4"><label for="register-email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label><input type="email" id="register-email" required class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="seu@email.com"></div>
+                    <div class="mb-4"><label for="register-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Senha</label><input type="password" id="register-password" required class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="Mínimo 6 caracteres"></div>
+                    <div class="mb-6"><label for="register-confirm-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirmar Senha</label><input type="password" id="register-confirm-password" required class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="Repita a senha"></div>
+                    <button type="submit" class="w-full bg-emerald-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-all duration-150 ease-in-out hover:scale-[1.03] mb-4 shadow-sm dark:shadow-black/30">Registrar</button>
                     <p id="register-error" class="text-rose-600 text-sm text-center h-4"></p>
                 </form>
                 </div>
-            <p class="text-center text-sm text-slate-600">
-                <span id="auth-prompt-login">Não tem uma conta? <button id="show-register-form-btn" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">Registre-se</button></span>
-                <span id="auth-prompt-register" class="hidden-section">Já tem uma conta? <button id="show-login-form-btn" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">Faça Login</button></span>
+            <p class="text-center text-sm text-slate-600 dark:text-slate-400">
+                <span id="auth-prompt-login">Não tem uma conta? <button id="show-register-form-btn" class="font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 hover:underline">Registre-se</button></span>
+                <span id="auth-prompt-register" class="hidden">Já tem uma conta? <button id="show-login-form-btn" class="font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 hover:underline">Faça Login</button></span>
             </p>
         </div>
     </div>
 
-    <div id="household-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 p-4 hidden-section">
-        <div class="w-full max-w-lg bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
+    <div id="household-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 p-4 hidden">
+        <div class="w-full max-w-lg bg-white dark:bg-slate-700 p-6 sm:p-8 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40">
             <div class="flex justify-between items-center mb-6">
-                 <h2 class="text-2xl font-bold text-slate-900">Configurar Compartilhamento</h2>
-                 <button id="back-to-app-btn" class="text-sm bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 transition-colors">Voltar ao Painel</button>
+                 <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Configurar Compartilhamento</h2>
+                 <button id="back-to-app-btn" class="text-sm bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.03]">Voltar ao Painel</button>
             </div>
             <div id="create-household-section">
-                <p class="text-slate-600 mb-4">Você ainda não faz parte de uma família/grupo. Crie um novo para compartilhar seus lançamentos.</p>
-                <input type="text" id="household-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none mb-4" placeholder="Nome da Família (ex: Família Silva)">
-                <button id="create-household-btn" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 transition-colors shadow-sm">Criar Família e Começar</button>
+                <p class="text-slate-600 dark:text-slate-400 mb-4">Você ainda não faz parte de uma família/grupo. Crie um novo para compartilhar seus lançamentos.</p>
+                <input type="text" id="household-name" class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none mb-4" placeholder="Nome da Família (ex: Família Silva)">
+                <button id="create-household-btn" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.03] shadow-sm dark:shadow-black/30">Criar Família e Começar</button>
                 <p id="household-error" class="text-rose-600 text-sm text-center h-4 mt-2"></p>
             </div>
-            <div id="manage-household-section" class="hidden-section">
-                <h3 class="text-xl font-semibold text-slate-800 mb-1">Minha Família: <span id="display-household-name" class="font-medium text-sky-700"></span></h3>
-                <p class="text-xs text-slate-500 mb-4">ID: <code id="display-household-id" class="bg-slate-200 p-0.5 rounded text-xs"></code></p>
+            <div id="manage-household-section" class="hidden">
+                <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-1">Minha Família: <span id="display-household-name" class="font-medium text-sky-700 dark:text-sky-400"></span></h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">ID: <code id="display-household-id" class="bg-slate-200 dark:bg-slate-600 dark:text-slate-300 p-0.5 rounded text-xs"></code></p>
                 <form id="invite-member-form" class="mb-6">
-                    <label for="invite-email" class="block text-sm font-medium text-slate-700 mb-1">Convidar Membro por Email</label>
+                    <label for="invite-email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Convidar Membro por Email</label>
                     <div class="flex gap-2">
-                        <input type="email" id="invite-email" required class="flex-grow p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="email@example.com">
-                        <button type="submit" class="bg-emerald-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-emerald-600 transition-colors shadow-sm">Convidar</button>
+                        <input type="email" id="invite-email" required class="flex-grow p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" placeholder="email@example.com">
+                        <button type="submit" class="bg-emerald-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-all duration-150 ease-in-out hover:scale-[1.03] shadow-sm dark:shadow-black/30">Convidar</button>
                     </div>
-                    <p id="invite-status" class="text-emerald-600 text-sm text-center h-4 mt-2"></p>
+                    <p id="invite-status" class="text-emerald-600 dark:text-emerald-400 text-sm text-center h-4 mt-2"></p>
                 </form>
                 <div>
-                     <h4 class="text-md font-semibold text-slate-700 mb-2">Membros Atuais:</h4>
-                     <ul id="household-members-list" class="list-disc list-inside text-slate-600 pl-2 space-y-1"></ul>
+                     <h4 class="text-md font-semibold text-slate-700 dark:text-slate-300 mb-2">Membros Atuais:</h4>
+                     <ul id="household-members-list" class="list-disc list-inside text-slate-600 dark:text-slate-400 pl-2 space-y-1"></ul>
                 </div>
             </div>
-             <div id="accept-invite-section" class="mt-6 pt-6 border-t border-slate-200 hidden-section">
-                <h3 class="text-xl font-semibold text-slate-800 mb-3">Convites Pendentes</h3>
+             <div id="accept-invite-section" class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-600 hidden">
+                <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">Convites Pendentes</h3>
                 <div id="pending-invites-list" class="space-y-3"></div>
-                <p id="no-pending-invites-msg" class="text-slate-500 mt-2">Você não tem convites pendentes no momento.</p>
+                <p id="no-pending-invites-msg" class="text-slate-500 dark:text-slate-400 mt-2">Você não tem convites pendentes no momento.</p>
             </div>
         </div>
     </div>
 
 
-    <div id="app-content" class="hidden-section container mx-auto p-4 sm:p-6 md:p-8">
+    <div id="app-content" class="hidden container mx-auto p-4 sm:p-6 md:p-8">
         <header class="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4 lg:gap-6">
             <div class="text-center lg:text-left">
-                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Painel Financeiro</h1>
-                <p id="user-greeting" class="text-slate-500 mt-1 text-sm sm:text-base">Gestão de Lançamentos do Mês</p>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Painel Financeiro</h1>
+                <p id="user-greeting" class="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">Gestão de Lançamentos do Mês</p>
             </div>
             <div class="flex flex-wrap items-center justify-center lg:justify-end gap-2 w-full lg:w-auto">
-                <div id="user-info" class="text-xs sm:text-sm text-slate-600 hidden-section order-first lg:order-none w-full lg:w-auto text-center lg:text-right mb-2 lg:mb-0 lg:mr-2"></div>
-                <select id="month-filter" class="bg-white border border-slate-300 rounded-lg shadow-sm p-2.5 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none  w-full xs:w-auto sm:flex-grow lg:flex-grow-0">
+                <div id="user-info" class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 hidden order-first lg:order-none w-full lg:w-auto text-center lg:text-right mb-2 lg:mb-0 lg:mr-2"></div>
+                <select id="month-filter" class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 p-2.5 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none w-full sm:w-auto md:flex-grow">
                 </select>
-                <button id="add-transaction-btn" class="bg-sky-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:bg-sky-700 transition-colors flex items-center justify-center gap-2  w-full xs:w-auto sm:flex-grow lg:flex-grow-0">
+                <button id="add-transaction-btn" class="bg-sky-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.03] flex items-center justify-center gap-2 w-full sm:w-auto">
                     <span class="text-lg">+</span>
                     <span>Adicionar</span>
                 </button>
-                <button id="manage-family-btn" class="bg-teal-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:bg-teal-600 transition-colors flex items-center justify-center gap-2  w-full xs:w-auto sm:flex-grow lg:flex-grow-0">
+                <button id="manage-family-btn" class="bg-teal-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-teal-600 dark:hover:bg-teal-400 transition-all duration-150 ease-in-out hover:scale-[1.03] flex items-center justify-center gap-2 w-full sm:w-auto">
                      <span>&#128106;</span> <span>Família</span>
                 </button>
-                <button id="logout-btn" class="bg-rose-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:bg-rose-600 transition-colors flex items-center justify-center gap-2  w-full xs:w-auto sm:flex-grow lg:flex-grow-0">
+                <button id="logout-btn" class="bg-rose-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-rose-600 dark:hover:bg-rose-400 transition-all duration-150 ease-in-out hover:scale-[1.03] flex items-center justify-center gap-2 w-full sm:w-auto">
                     <span>Sair</span>
                     <span class="text-xl">&#x23CF;</span> 
                 </button>
@@ -126,52 +116,52 @@
         </header>
         <main>
             <section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200"><h2 class="text-sm font-medium text-slate-500">Receitas Totais</h2><p id="total-income" class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-2">R$ 0,00</p></div>
-                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200"><h2 class="text-sm font-medium text-slate-500">Despesas Totais</h2><p id="total-expense" class="text-2xl sm:text-3xl font-bold text-rose-600 mt-2">R$ 0,00</p></div>
-                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200"><h2 class="text-sm font-medium text-slate-500">Saldo do Mês</h2><p id="balance" class="text-2xl sm:text-3xl font-bold text-slate-700 mt-2">R$ 0,00</p></div>
+                <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Receitas Totais</h2><p id="total-income" class="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">R$ 0,00</p></div>
+                <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Despesas Totais</h2><p id="total-expense" class="text-2xl sm:text-3xl font-bold text-rose-600 dark:text-rose-400 mt-2">R$ 0,00</p></div>
+                <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Saldo do Mês</h2><p id="balance" class="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-300 mt-2">R$ 0,00</p></div>
             </section>
             <section class="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8 mb-6 sm:mb-8">
-                <div class="lg:col-span-3 bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200"><h3 class="text-lg font-semibold text-slate-800 mb-4">Despesas por Categoria</h3><div class="chart-container"><canvas id="expenses-by-category-chart"></canvas></div></div>
-                <div class="lg:col-span-2 bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200"><h3 class="text-lg font-semibold text-slate-800 mb-4">Receitas vs Despesas</h3><div class="chart-container"><canvas id="income-vs-expense-chart"></canvas></div></div>
+                <div class="lg:col-span-3 bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Despesas por Categoria</h3><div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]"><canvas id="expenses-by-category-chart"></canvas></div></div>
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Receitas vs Despesas</h3><div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]"><canvas id="income-vs-expense-chart"></canvas></div></div>
             </section>
-            <section class="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200">
+            <section class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-slate-800">Últimos Lançamentos</h3>
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200">Últimos Lançamentos</h3>
                     </div>
                 <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full min-w-[640px] text-left">
-                        <thead class="border-b-2 border-slate-200">
+                        <thead class="border-b-2 border-slate-200 dark:border-slate-700">
                             <tr>
-                                <th class="p-3 text-sm font-semibold text-slate-500">Data</th>
-                                <th class="p-3 text-sm font-semibold text-slate-500">Descrição</th>
-                                <th class="p-3 text-sm font-semibold text-slate-500">Categoria</th>
-                                <th class="p-3 text-sm font-semibold text-slate-500 text-right">Valor</th>
-                                <th class="p-3 text-sm font-semibold text-slate-500">Lançado por</th>
-                                <th class="p-3 text-sm font-semibold text-slate-500 text-center">Ação</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Data</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Descrição</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Categoria</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Valor</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Lançado por</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-center">Ação</th>
                             </tr>
                         </thead>
                         <tbody id="transactions-table-body"></tbody>
                     </table>
-                     <p id="no-transactions-msg" class="text-center text-slate-500 py-8">Nenhum lançamento para o período selecionado.</p>
+                     <p id="no-transactions-msg" class="text-center text-slate-500 dark:text-slate-400 py-8">Nenhum lançamento para o período selecionado.</p>
                 </div>
             </section>
         </main>
     </div>
 
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div id="modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 sm:p-8 transform transition-all -translate-y-16 opacity-0">
-            <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-slate-900">Novo Lançamento</h2><button id="close-modal-btn" class="text-slate-400 hover:text-slate-600 text-3xl leading-none">&times;</button></div>
+        <div id="modal-content" class="bg-white dark:bg-slate-700 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40 w-full max-w-md p-6 sm:p-8 transform transition-all -translate-y-16 opacity-0">
+            <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Novo Lançamento</h2><button id="close-modal-btn" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 text-3xl leading-none transition-colors duration-150 ease-in-out">&times;</button></div>
             <form id="transaction-form">
-                <div class="mb-4"> <label for="transaction-type" class="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
-                    <select id="transaction-type" name="type" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" required><option value="Despesa">Despesa</option><option value="Receita">Receita</option></select>
+                <div class="mb-4"> <label for="transaction-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo</label>
+                    <select id="transaction-type" name="type" class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 outline-none" required><option value="Despesa">Despesa</option><option value="Receita">Receita</option></select>
                 </div>
-                <div class="mb-4"><label for="transaction-description" class="block text-sm font-medium text-slate-700 mb-1">Descrição</label><input type="text" id="transaction-description" name="description" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" required></div>
+                <div class="mb-4"><label for="transaction-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição</label><input type="text" id="transaction-description" name="description" class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 outline-none" required></div>
                 <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div><label for="transaction-amount" class="block text-sm font-medium text-slate-700 mb-1">Valor</label><input type="number" step="0.01" id="transaction-amount" name="amount" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" required></div>
-                    <div><label for="transaction-date" class="block text-sm font-medium text-slate-700 mb-1">Data</label><input type="date" id="transaction-date" name="date" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" required></div>
+                    <div><label for="transaction-amount" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor</label><input type="number" step="0.01" id="transaction-amount" name="amount" class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 outline-none" required></div>
+                    <div><label for="transaction-date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data</label><input type="date" id="transaction-date" name="date" class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 outline-none" required></div>
                 </div>
-                 <div class="mb-6"><label for="transaction-category" class="block text-sm font-medium text-slate-700 mb-1">Categoria</label><select id="transaction-category" name="category" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none" required></select></div>
-                <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 transition-colors shadow-sm">Salvar Lançamento</button>
+                 <div class="mb-6"><label for="transaction-category" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Categoria</label><select id="transaction-category" name="category" class="w-full p-3 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 outline-none" required></select></div>
+                <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.03] shadow-sm dark:shadow-black/30">Salvar Lançamento</button>
             </form>
         </div>
     </div>
@@ -206,7 +196,7 @@
             } catch (e) {
                 console.error("Erro crítico ao inicializar Firebase Auth com persistência:", e);
                 alert("Não foi possível inicializar o sistema de autenticação devido a restrições de armazenamento do navegador. Por favor, verifique as configurações de cookies e privacidade do seu navegador (especialmente se cookies de terceiros estão bloqueados) e tente recarregar a página.");
-                if(loadingOverlay) loadingOverlay.classList.add('hidden-section'); 
+                if(loadingOverlay) loadingOverlay.classList.add('hidden'); 
                 showScreen('auth'); 
                 showAuthError('login', "Erro de armazenamento do navegador. Verifique as configurações.");
                 return; 
@@ -300,15 +290,15 @@
             const transactionDateInput = document.getElementById('transaction-date');
 
             function showScreen(screenName) {
-                if(authSection) authSection.classList.add('hidden-section');
-                if(householdSection) householdSection.classList.add('hidden-section');
-                if(appContentSection) appContentSection.classList.add('hidden-section');
-                if(loadingOverlay) loadingOverlay.classList.add('hidden-section'); 
+                if(authSection) authSection.classList.add('hidden');
+                if(householdSection) householdSection.classList.add('hidden');
+                if(appContentSection) appContentSection.classList.add('hidden');
+                if(loadingOverlay) loadingOverlay.classList.add('hidden'); 
 
-                if (screenName === 'auth' && authSection) authSection.classList.remove('hidden-section');
-                else if (screenName === 'household' && householdSection) householdSection.classList.remove('hidden-section');
-                else if (screenName === 'app' && appContentSection) appContentSection.classList.remove('hidden-section');
-                else if (screenName === 'loading' && loadingOverlay) loadingOverlay.classList.remove('hidden-section');
+                if (screenName === 'auth' && authSection) authSection.classList.remove('hidden');
+                else if (screenName === 'household' && householdSection) householdSection.classList.remove('hidden');
+                else if (screenName === 'app' && appContentSection) appContentSection.classList.remove('hidden');
+                else if (screenName === 'loading' && loadingOverlay) loadingOverlay.classList.remove('hidden');
             }
             
             function showAuthError(formType, message) {
@@ -327,17 +317,17 @@
             function toggleAuthForms(showLogin = true) {
                 clearAuthErrors();
                 if (showLogin) {
-                    if(loginForm) loginForm.classList.remove('hidden-section');
-                    if(registerForm) registerForm.classList.add('hidden-section');
-                    if(authPromptLogin) authPromptLogin.classList.remove('hidden-section');
-                    if(authPromptRegister) authPromptRegister.classList.add('hidden-section');
+                    if(loginForm) loginForm.classList.remove('hidden');
+                    if(registerForm) registerForm.classList.add('hidden');
+                    if(authPromptLogin) authPromptLogin.classList.remove('hidden');
+                    if(authPromptRegister) authPromptRegister.classList.add('hidden');
                     if(authTitle) authTitle.textContent = "Login";
                     if(authSubtitle) authSubtitle.textContent = "Acesse seu painel financeiro.";
                 } else {
-                    if(loginForm) loginForm.classList.add('hidden-section');
-                    if(registerForm) registerForm.classList.remove('hidden-section');
-                    if(authPromptLogin) authPromptLogin.classList.add('hidden-section');
-                    if(authPromptRegister) authPromptRegister.classList.remove('hidden-section');
+                    if(loginForm) loginForm.classList.add('hidden');
+                    if(registerForm) registerForm.classList.remove('hidden');
+                    if(authPromptLogin) authPromptLogin.classList.add('hidden');
+                    if(authPromptRegister) authPromptRegister.classList.remove('hidden');
                     if(authTitle) authTitle.textContent = "Registrar";
                     if(authSubtitle) authSubtitle.textContent = "Crie sua conta para começar.";
                 }
@@ -441,16 +431,16 @@
                 
                 data.forEach(t => {
                     const row = document.createElement('tr');
-                    row.className = `border-b border-slate-200 ${t.type === 'Receita' ? 'bg-emerald-50/70' : 'bg-rose-50/70'}`; // Cores mais suaves
+                    row.className = `border-b border-slate-200 dark:border-slate-700 ${t.type === 'Receita' ? 'bg-emerald-50/70 dark:bg-emerald-800/30' : 'bg-rose-50/70 dark:bg-rose-800/30'}`; 
                     const displayDate = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data inválida';
                     row.innerHTML = `
-                        <td class="p-3 text-slate-600 text-sm">${displayDate}</td>
-                        <td class="p-3 font-medium text-slate-800">${String(t.description || '')}</td>
-                        <td class="p-3 text-slate-600 text-sm">${String(t.category || '')}</td>
-                        <td class="p-3 font-semibold text-right ${t.type === 'Receita' ? 'text-emerald-700' : 'text-rose-700'}">${formatCurrency(t.amount || 0)}</td>
-                        <td class="p-3 text-slate-500 text-xs">${String(t.createdByName || 'Desconhecido')}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400 text-sm">${displayDate}</td>
+                        <td class="p-3 font-medium text-slate-800 dark:text-slate-200">${String(t.description || '')}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400 text-sm">${String(t.category || '')}</td>
+                        <td class="p-3 font-semibold text-right ${t.type === 'Receita' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}">${formatCurrency(t.amount || 0)}</td>
+                        <td class="p-3 text-slate-500 dark:text-slate-500 text-xs">${String(t.createdByName || 'Desconhecido')}</td>
                         <td class="p-3 text-center">
-                            <button data-id="${t.id}" class="delete-btn text-slate-400 hover:text-rose-600 p-1">&#10005;</button>
+                            <button data-id="${t.id}" class="delete-btn text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1" aria-label="Excluir lançamento">&#10005;</button>
                         </td>
                     `;
                     tableBody.appendChild(row);
@@ -473,15 +463,18 @@
                 const expensesChartEl = document.getElementById('expenses-by-category-chart');
                 const incomeVsExpenseChartEl = document.getElementById('income-vs-expense-chart');
 
-                const chartLabelColor = '#334155'; // slate-700
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const chartLabelColor = isDarkMode ? '#cbd5e1' : '#334155'; // slate-300 for dark, slate-700 for light
+                const gridColor = isDarkMode ? '#334155' : '#e2e8f0'; // slate-700 for dark, slate-200 for light
+                const tooltipBorderColor = isDarkMode ? '#334155' : '#f8fafc'; // slate-700 for dark, slate-50 for light
 
                 if (expensesChartEl) {
                     const ctxCategory = expensesChartEl.getContext('2d');
-                    charts.categoryChart = new Chart(ctxCategory, {type: 'doughnut', data: {labels: categoryNames.length > 0 ? categoryNames : ['Nenhuma despesa'], datasets: [{data: categoryValues.length > 0 ? categoryValues : [1], backgroundColor: categoryValues.length > 0 ? ['#0ea5e9', '#14b8a6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#8b5cf6'] : ['#e2e8f0'], borderColor: '#f8fafc', borderWidth: 3 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: { position: 'bottom', labels: { color: chartLabelColor, boxWidth: 12, padding: 15, font: { size: 10 } } }, tooltip: {callbacks: {label: function(context) {let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) {label += formatCurrency(context.parsed);} return label;}}}}}});
+                    charts.categoryChart = new Chart(ctxCategory, {type: 'doughnut', data: {labels: categoryNames.length > 0 ? categoryNames : ['Nenhuma despesa'], datasets: [{data: categoryValues.length > 0 ? categoryValues : [1], backgroundColor: categoryValues.length > 0 ? ['#0ea5e9', '#14b8a6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#8b5cf6'] : ['#e2e8f0'], borderColor: isDarkMode ? '#1e293b' : '#f8fafc', borderWidth: 3 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: { position: 'bottom', labels: { color: chartLabelColor, boxWidth: 12, padding: 15, font: { size: 10 } } }, tooltip: {borderColor: tooltipBorderColor, borderWidth: 1, callbacks: {label: function(context) {let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) {label += formatCurrency(context.parsed);} return label;}}}}}});
                 }
                 if (incomeVsExpenseChartEl) {
                     const ctxIncomeVsExpense = incomeVsExpenseChartEl.getContext('2d');
-                    charts.incomeVsExpenseChart = new Chart(ctxIncomeVsExpense, {type: 'bar', data: {labels: ['Fluxo de Caixa'], datasets: [{ label: 'Receitas', data: [income], backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: 'rgba(5, 150, 105, 1)', borderWidth:1, borderRadius: 4 },{ label: 'Despesas', data: [expense], backgroundColor: 'rgba(244, 63, 94, 0.7)', borderColor: 'rgba(225, 29, 72, 1)', borderWidth:1, borderRadius: 4 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: chartLabelColor} } }, scales: { y: { beginAtZero: true, ticks: { color: chartLabelColor, callback: (value) => formatCurrency(value) }, grid: { color: '#e2e8f0'} }, x: { ticks: {color: chartLabelColor}, grid: { display: false} }  }}});
+                    charts.incomeVsExpenseChart = new Chart(ctxIncomeVsExpense, {type: 'bar', data: {labels: ['Fluxo de Caixa'], datasets: [{ label: 'Receitas', data: [income], backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: 'rgba(5, 150, 105, 1)', borderWidth:1, borderRadius: 4 },{ label: 'Despesas', data: [expense], backgroundColor: 'rgba(244, 63, 94, 0.7)', borderColor: 'rgba(225, 29, 72, 1)', borderWidth:1, borderRadius: 4 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: chartLabelColor} }, tooltip: {borderColor: tooltipBorderColor, borderWidth: 1} }, scales: { y: { beginAtZero: true, ticks: { color: chartLabelColor, callback: (value) => formatCurrency(value) }, grid: { color: gridColor} }, x: { ticks: {color: chartLabelColor}, grid: { display: false, color: gridColor} }  }}});
                 }
             };
 
@@ -635,7 +628,7 @@
                     if (docSnap.exists()) {
                         householdData = { id: docSnap.id, ...docSnap.data() };
                         console.log("Dados do Household atualizados (onSnapshot):", householdData);
-                        if (householdSection && householdSection.classList.contains('hidden-section') === false) {
+                        if (householdSection && householdSection.classList.contains('hidden') === false) {
                              populateManageHouseholdUI(); 
                         }
                     } else {
@@ -728,8 +721,8 @@
                 if (!targetUserEmail) return;
                 console.log("Verificando convites para:", targetUserEmail);
                 if(pendingInvitesListEl) pendingInvitesListEl.innerHTML = '';
-                if(acceptInviteSection) acceptInviteSection.classList.remove('hidden-section');
-                if(noPendingInvitesMsg) noPendingInvitesMsg.classList.remove('hidden-section'); 
+                if(acceptInviteSection) acceptInviteSection.classList.remove('hidden');
+                if(noPendingInvitesMsg) noPendingInvitesMsg.classList.remove('hidden'); 
 
                 try {
                     const safeEmailKey = targetUserEmail.replace(/\./g, ',');
@@ -741,7 +734,7 @@
                         if (household.pendingInvites && household.pendingInvites[safeEmailKey] && household.pendingInvites[safeEmailKey].invitedBy) {
                             const inviteData = household.pendingInvites[safeEmailKey];
                             foundInvites = true;
-                            if(noPendingInvitesMsg) noPendingInvitesMsg.classList.add('hidden-section');
+                            if(noPendingInvitesMsg) noPendingInvitesMsg.classList.add('hidden');
                             const inviteItem = document.createElement('div');
                             inviteItem.className = 'p-3 mb-2 border rounded-md bg-slate-50 flex justify-between items-center';
                             inviteItem.innerHTML = `<span>Convidado para "${household.name || 'Família sem nome'}" por ${inviteData.invitedByName || 'Alguém'}</span>`;
@@ -797,9 +790,9 @@
 
             function populateManageHouseholdUI() { 
                 if (householdData && activeHouseholdId) {
-                    if(createHouseholdSection) createHouseholdSection.classList.add('hidden-section');
-                    if(manageHouseholdSection) manageHouseholdSection.classList.remove('hidden-section');
-                    if(acceptInviteSection) acceptInviteSection.classList.add('hidden-section'); 
+                    if(createHouseholdSection) createHouseholdSection.classList.add('hidden');
+                    if(manageHouseholdSection) manageHouseholdSection.classList.remove('hidden');
+                    if(acceptInviteSection) acceptInviteSection.classList.add('hidden'); 
                     if(displayHouseholdName) displayHouseholdName.textContent = householdData.name || 'Família sem nome';
                     if(displayHouseholdId) displayHouseholdId.textContent = activeHouseholdId;
 
@@ -811,14 +804,14 @@
                             if(householdMembersList) householdMembersList.appendChild(li);
                         });
                     }
-                    if(inviteMemberForm) inviteMemberForm.classList.toggle('hidden-section', userId !== householdData.ownerId);
+                    if(inviteMemberForm) inviteMemberForm.classList.toggle('hidden', userId !== householdData.ownerId);
                 } else {
-                    if(createHouseholdSection) createHouseholdSection.classList.remove('hidden-section');
-                    if(manageHouseholdSection) manageHouseholdSection.classList.add('hidden-section');
+                    if(createHouseholdSection) createHouseholdSection.classList.remove('hidden');
+                    if(manageHouseholdSection) manageHouseholdSection.classList.add('hidden');
                     if (userId && userEmail) { 
                         checkAndDisplayInvites(userEmail, userId);
                     } else {
-                         if(acceptInviteSection) acceptInviteSection.classList.add('hidden-section');
+                         if(acceptInviteSection) acceptInviteSection.classList.add('hidden');
                     }
                 }
             }
@@ -911,9 +904,9 @@
                         if(userGreetingEl) userGreetingEl.textContent = `Bem-vindo(a), ${currentUserName}!`;
                         if(userInfoEl) {
                             userInfoEl.textContent = `Logado como: ${authInstance.currentUser.email}`;
-                            userInfoEl.classList.remove('hidden-section');
+                            userInfoEl.classList.remove('hidden');
                         }
-                        if(logoutBtn) logoutBtn.classList.remove('hidden-section');
+                        if(logoutBtn) logoutBtn.classList.remove('hidden');
                     }
 
                 } else { 
@@ -922,9 +915,9 @@
                     transactions = []; selectedMonthYear = null; 
                     populateMonthFilter(); updateDashboard(); 
                     
-                    if(userInfoEl){ userInfoEl.classList.add('hidden-section'); userInfoEl.textContent = '';}
+                    if(userInfoEl){ userInfoEl.classList.add('hidden'); userInfoEl.textContent = '';}
                     if(userGreetingEl) userGreetingEl.textContent = "Gestão de Lançamentos do Mês";
-                    if(logoutBtn) logoutBtn.classList.add('hidden-section');
+                    if(logoutBtn) logoutBtn.classList.add('hidden');
                     toggleAuthForms(true); 
                     showScreen('auth');
                     console.log("Usuário deslogado. Exibindo tela de autenticação.");
