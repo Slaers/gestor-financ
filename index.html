@@ -199,7 +199,7 @@
             } catch (e) {
                 console.error("Erro crítico ao inicializar Firebase Auth com persistência:", e);
                 alert("Não foi possível inicializar o sistema de autenticação devido a restrições de armazenamento do navegador. Por favor, verifique as configurações de cookies e privacidade do seu navegador (especialmente se cookies de terceiros estão bloqueados) e tente recarregar a página.");
-                loadingOverlay.classList.add('hidden-section');
+                if(loadingOverlay) loadingOverlay.classList.add('hidden-section'); // Esconder loading se houver erro
                 showScreen('auth'); 
                 showAuthError('login', "Erro de armazenamento do navegador. Verifique as configurações.");
                 return; 
@@ -311,13 +311,13 @@
                 else if (formType === 'register') el = registerErrorEl;
                 else if (formType === 'google') el = googleSignInErrorEl;
                 else return;
-                el.textContent = message;
+                if(el) el.textContent = message; // Adicionado verificação se el existe
             }
 
             function clearAuthErrors() {
-                loginErrorEl.textContent = '';
-                registerErrorEl.textContent = '';
-                googleSignInErrorEl.textContent = '';
+                if(loginErrorEl) loginErrorEl.textContent = '';
+                if(registerErrorEl) registerErrorEl.textContent = '';
+                if(googleSignInErrorEl) googleSignInErrorEl.textContent = '';
             }
 
             function toggleAuthForms(showLogin = true) {
@@ -874,18 +874,24 @@
                     } else { 
                         console.log("Usuário logado, mas sem activeHouseholdId ou perfil. Exibindo tela de configuração de família.");
                         if (!userDocSnap.exists()) {
+                            console.log("Perfil do usuário não existe, tentando criar/atualizar...");
                             try {
                                 await runTransaction(db, async (transaction) => {
-                                    transaction.set(userDocRef, { email: userEmail, displayName: userDisplayName }, { merge: true });
+                                    console.log("Dentro da transação para criar perfil. UserID:", userId, "Email:", userEmail, "DisplayName:", userDisplayName);
+                                    transaction.set(userDocRef, { email: userEmail, displayName: userDisplayName, activeHouseholdId: null }, { merge: true });
                                 });
                                 console.log("Perfil de usuário criado/atualizado para:", userId);
                             } catch (profileError) {
-                                console.error("Erro ao criar/atualizar perfil do usuário:", profileError, "Detalhes:", profileError.message, profileError.stack);
-                                alert("Erro ao configurar perfil do usuário. Verifique o console.");
+                                console.error("Erro CRÍTICO ao criar/atualizar perfil do usuário:", profileError, "Detalhes:", profileError.message, profileError.stack);
+                                alert("Erro CRÍTICO ao configurar perfil do usuário. Verifique o console e as regras de segurança do Firestore para o caminho /users/{userId}.");
+                                // Não prosseguir se o perfil não puder ser criado, pois pode levar a outros erros.
+                                showScreen('auth'); // Volta para a tela de login
+                                logoutBtn.click(); // Tenta deslogar para evitar estado inconsistente
+                                return;
                             }
                         }
                         activeHouseholdId = null; householdData = null;
-                        if (unsubscribeFirestore) unsubscribeFirestore(); 
+                        if (unsubscribeFirestore) { unsubscribeFirestore(); unsubscribeFirestore = null;}
                         transactions = []; populateMonthFilter(); updateDashboard(); 
                         showScreen('household');
                         populateManageHouseholdUI(); 
