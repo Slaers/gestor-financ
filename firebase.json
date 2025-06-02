@@ -6,7 +6,11 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
+<<<<<<< HEAD
     "public": ".",
+=======
+    "public": "public",
+>>>>>>> 0b24a5428881cfcd732381729f2166c0b87c7acb
     "ignore": [
       "firebase.json",
       "**/.*",
