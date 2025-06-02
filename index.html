@@ -172,13 +172,12 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, setLogLevel, writeBatch, getDoc, updateDoc, arrayUnion, getDocs, where, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, setLogLevel, writeBatch, getDoc, updateDoc, arrayUnion, getDocs, where, runTransaction, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // Adicionado deleteField
 
         document.addEventListener('DOMContentLoaded', () => {
             const loadingOverlay = document.getElementById('loading-overlay');
             
-            const firebaseConfig = { /* ... Sua Config ... */ }; 
-             const firebaseConfigProvided = {
+            const firebaseConfigProvided = {
                 apiKey: "AIzaSyBEE49m18ujHj2MneCZKVoyuKgrV5okCYA",
                 authDomain: "gestao-de-lancamentos.firebaseapp.com",
                 projectId: "gestao-de-lancamentos",
@@ -280,6 +279,7 @@
             const transactionCategorySelect = document.getElementById('transaction-category');
             const transactionDateInput = document.getElementById('transaction-date');
 
+            // --- START FUNCTION DECLARATIONS ---
             function showScreen(screenName) {
                 authSection.classList.add('hidden-section');
                 householdSection.classList.add('hidden-section');
@@ -292,12 +292,7 @@
                 else if (screenName === 'loading') loadingOverlay.classList.remove('hidden-section');
             }
             
-            manageSharingBtn.addEventListener('click', () => {
-                showScreen('household'); 
-                populateManageHouseholdUI(); 
-            });
-
-             function showAuthError(formType, message) {
+            function showAuthError(formType, message) {
                 let el;
                 if (formType === 'login') el = loginErrorEl;
                 else if (formType === 'register') el = registerErrorEl;
@@ -330,86 +325,6 @@
                     authSubtitle.textContent = "Crie sua conta para começar.";
                 }
             }
-
-            showRegisterFormBtn.addEventListener('click', () => toggleAuthForms(false));
-            showLoginFormBtn.addEventListener('click', () => toggleAuthForms(true));
-
-            loginForm.addEventListener('submit', async (e) => { 
-                 e.preventDefault();
-                clearAuthErrors();
-                showScreen('loading');
-                const email = loginEmailInput.value;
-                const password = loginPasswordInput.value;
-                try {
-                    console.log("Tentando login com E-mail/Senha:", email);
-                    await signInWithEmailAndPassword(auth, email, password);
-                    console.log("Login com E-mail/Senha bem-sucedido para:", email);
-                } catch (error) {
-                    console.error("Erro no login E-mail/Senha:", error, "Código:", error.code);
-                    showAuthError('login', traduireErroAuth(error.code));
-                    showScreen('auth'); 
-                } 
-            });
-
-            registerForm.addEventListener('submit', async (e) => { 
-                 e.preventDefault();
-                clearAuthErrors();
-                const email = registerEmailInput.value;
-                const password = registerPasswordInput.value;
-                const confirmPassword = registerConfirmPasswordInput.value;
-
-                if (password !== confirmPassword) {
-                    showAuthError('register', "As senhas não coincidem.");
-                    return;
-                }
-                if (password.length < 6) {
-                    showAuthError('register', "A senha deve ter no mínimo 6 caracteres.");
-                    return;
-                }
-                showScreen('loading');
-                try {
-                    console.log("Tentando registrar com E-mail/Senha:", email);
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    console.log("Registro com E-mail/Senha bem-sucedido para:", email);
-                    toggleAuthForms(true); 
-                    loginEmailInput.value = email; 
-                    loginPasswordInput.value = '';
-                    loginErrorEl.textContent = "Registro realizado! Faça o login.";
-                     showScreen('auth'); 
-                } catch (error) {
-                    console.error("Erro no registro E-mail/Senha:", error, "Código:", error.code);
-                    showAuthError('register', traduireErroAuth(error.code));
-                    showScreen('auth'); 
-                } 
-            });
-
-            googleSignInBtn.addEventListener('click', async () => { 
-                clearAuthErrors();
-                showScreen('loading');
-                const provider = new GoogleAuthProvider();
-                try {
-                    console.log("Tentando login com Google...");
-                    await signInWithPopup(auth, provider);
-                    console.log("Login com Google bem-sucedido.");
-                } catch (error) {
-                    console.error("Erro no login com Google:", error, "Código:", error.code);
-                    showAuthError('google', traduireErroAuth(error.code));
-                    showScreen('auth');
-                } 
-            });
-
-            logoutBtn.addEventListener('click', async () => {
-                showScreen('loading');
-                try {
-                    console.log("Fazendo logout...");
-                    await signOut(auth);
-                    console.log("Logout bem-sucedido.");
-                } catch (error) {
-                    console.error("Erro no logout:", error);
-                    alert("Erro ao sair.");
-                     showScreen('auth'); 
-                } 
-            });
             
             function traduireErroAuth(errorCode) { 
                  switch (errorCode) {
@@ -431,200 +346,137 @@
                 }
             }
 
-            createHouseholdBtn.addEventListener('click', async () => {
-                const name = householdNameInput.value.trim() || `Família de ${userDisplayName || userEmail}`;
-                if (!userId) {
-                    householdErrorEl.textContent = "Usuário não logado.";
-                    return;
-                }
-                showScreen('loading');
-                try {
-                    const householdRef = await addDoc(collection(db, "households"), {
-                        ownerId: userId,
-                        name: name,
-                        members: { [userId]: { name: userDisplayName || userEmail, email: userEmail } }, 
-                        pendingInvites: {}
-                    });
-                    activeHouseholdId = householdRef.id;
-                    // Atualiza o householdData local imediatamente
-                    householdData = { id: activeHouseholdId, ownerId: userId, name: name, members: { [userId]: { name: userDisplayName || userEmail, email: userEmail } }, pendingInvites: {} };
+            function formatCurrency(value) {
+                const val = Math.abs(value);
+                const sign = value < 0 ? '- ' : '';
+                return `${sign}R$ ${val.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
+            };
 
-
-                    const userDocRef = doc(db, "users", userId);
-                    // Cria ou atualiza o documento do usuário
-                    await runTransaction(db, async (transaction) => {
-                        transaction.set(userDocRef, { 
-                            activeHouseholdId: activeHouseholdId, 
-                            email: userEmail, // Garante que o email seja salvo/atualizado
-                            displayName: userDisplayName // Garante que o displayName seja salvo/atualizado
-                        }, { merge: true }); 
-                    });
-                    
-                    console.log("Família criada com ID:", activeHouseholdId);
-                    await setupFirestoreListener(activeHouseholdId); 
-                    showScreen('app');
-                    populateManageHouseholdUI(); 
-                } catch (error) {
-                    console.error("Erro ao criar família:", error);
-                    householdErrorEl.textContent = "Erro ao criar família: " + error.message;
-                    showScreen('household'); 
+            function populateMonthFilter() {
+                console.log("Populando filtro de mês...");
+                const months = new Set();
+                transactions.forEach(t => {
+                    if (t.date) months.add(t.date.substring(0, 7));
+                });
+                
+                if (months.size === 0) {
+                   console.log("Nenhum mês encontrado, usando mês atual.");
+                   const now = new Date();
+                   const month = String(now.getMonth() + 1).padStart(2, '0');
+                   const year = now.getFullYear();
+                   months.add(`${year}-${month}`);
                 }
-            });
 
-            inviteMemberForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const targetEmail = inviteEmailInput.value.trim();
-                if (!targetEmail || !activeHouseholdId || !householdData) {
-                    inviteStatusEl.textContent = "Dados da família ou email inválidos.";
-                    return;
-                }
-                if (userId !== householdData.ownerId) {
-                    inviteStatusEl.textContent = "Apenas o proprietário pode convidar membros.";
-                    return;
-                }
-                showScreen('loading');
-                try {
-                    const isAlreadyMember = Object.values(householdData.members || {}).some(member => member.email === targetEmail);
-                    const safeEmailKeyForCheck = targetEmail.replace(/\./g, ',');
-                    const isAlreadyInvited = householdData.pendingInvites && householdData.pendingInvites[safeEmailKeyForCheck];
+                const sortedMonths = Array.from(months).sort().reverse();
+                const currentFilterValue = selectedMonthYear || monthFilter.value;
+                monthFilter.innerHTML = '';
 
-                    if (isAlreadyMember) {
-                        inviteStatusEl.textContent = "Este email já é membro da família.";
-                        showScreen('household'); populateManageHouseholdUI(); return;
+                sortedMonths.forEach(monthYear => {
+                    const [year, month] = monthYear.split('-');
+                    const option = document.createElement('option');
+                    option.value = monthYear;
+                    const date = new Date(year, month - 1, 1);
+                    option.textContent = date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                    monthFilter.appendChild(option);
+                });
+                
+                if (sortedMonths.includes(currentFilterValue)) {
+                    monthFilter.value = currentFilterValue;
+                    selectedMonthYear = currentFilterValue;
+                } else if (sortedMonths.length > 0) {
+                    monthFilter.value = sortedMonths[0];
+                    selectedMonthYear = sortedMonths[0];
+                } else { 
+                    const now = new Date();
+                    const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    if (!monthFilter.querySelector(`option[value="${currentMonthYear}"]`)) {
+                        const option = document.createElement('option');
+                        option.value = currentMonthYear;
+                        option.textContent = now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                        monthFilter.appendChild(option);
                     }
-                    if (isAlreadyInvited) {
-                        inviteStatusEl.textContent = "Este email já foi convidado.";
-                        showScreen('household'); populateManageHouseholdUI(); return;
-                    }
-
-                    const householdDocRef = doc(db, "households", activeHouseholdId);
-                    const safeEmailKeyForWrite = targetEmail.replace(/\./g, ','); 
-                    
-                    await updateDoc(householdDocRef, {
-                        [`pendingInvites.${safeEmailKeyForWrite}`]: { invitedBy: userId, invitedByName: userDisplayName || userEmail, timestamp: serverTimestamp() }
-                    });
-                    
-                    inviteStatusEl.textContent = `Convite enviado para ${targetEmail}!`;
-                    inviteEmailInput.value = '';
-                } catch (error) {
-                    console.error("Erro ao convidar membro:", error);
-                    inviteStatusEl.textContent = "Erro ao enviar convite.";
-                } finally {
-                    showScreen('household'); 
+                    monthFilter.value = currentMonthYear;
+                    selectedMonthYear = currentMonthYear;
                 }
-            });
+                console.log("Mês selecionado para o filtro:", selectedMonthYear);
+            };
 
-            async function checkAndDisplayInvites(targetUserEmail, currentUserId) {
-                if (!targetUserEmail) return;
-                console.log("Verificando convites para:", targetUserEmail);
-                pendingInvitesListEl.innerHTML = '';
-                acceptInviteSection.classList.remove('hidden-section');
-                noPendingInvitesMsg.classList.remove('hidden-section'); // Mostra por padrão, esconde se achar convites
-
-                try {
-                    const safeEmailKey = targetUserEmail.replace(/\./g, ',');
-                    const q = query(collection(db, "households"), where(`pendingInvites.${safeEmailKey}.invitedBy`, "!=", null));
-                    const snapshot = await getDocs(q);
-                    let foundInvites = false;
-                    snapshot.forEach(householdDoc => {
-                        const household = { id: householdDoc.id, ...householdDoc.data() };
-                        const inviteData = household.pendingInvites[safeEmailKey];
-                        if (inviteData) {
-                            foundInvites = true;
-                            noPendingInvitesMsg.classList.add('hidden-section');
-                            const inviteItem = document.createElement('div');
-                            inviteItem.className = 'p-3 mb-2 border rounded-md bg-slate-50 flex justify-between items-center';
-                            inviteItem.innerHTML = `<span>Convidado para "${household.name || 'Família sem nome'}" por ${inviteData.invitedByName || 'Alguém'}</span>`;
-                            const acceptBtn = document.createElement('button');
-                            acceptBtn.className = 'bg-green-500 text-white text-sm py-1 px-2 rounded hover:bg-green-600';
-                            acceptBtn.textContent = 'Aceitar';
-                            acceptBtn.onclick = async () => {
-                                await acceptInvite(household.id, currentUserId, targetUserEmail, userDisplayName || userEmail);
-                            };
-                            inviteItem.appendChild(acceptBtn);
-                            pendingInvitesListEl.appendChild(inviteItem);
-                        }
-                    });
-                     if (!foundInvites) console.log("Nenhum convite pendente encontrado para", targetUserEmail);
-                     else console.log("Convites pendentes exibidos.");
-
-                } catch (error) {
-                    console.error("Erro ao buscar convites:", error);
-                    noPendingInvitesMsg.textContent = "Erro ao buscar convites.";
-                }
-            }
-
-            async function acceptInvite(householdIdToJoin, currentUserId, currentUserEmail, currentUserName) {
-                 showScreen('loading');
-                try {
-                    const householdDocRef = doc(db, "households", householdIdToJoin);
-                    const userDocRef = doc(db, "users", currentUserId);
-                    const safeEmailKey = currentUserEmail.replace(/\./g, ',');
-
-                    await runTransaction(db, async (transaction) => {
-                        const householdSnap = await transaction.get(householdDocRef);
-                        if (!householdSnap.exists()) throw "Família não encontrada.";
-                        
-                        // Cria um objeto para deletar o campo. Necessário importar deleteField de firebase/firestore
-                        // const { deleteField } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                        // Por simplicidade, vamos apenas setar como null ou um valor que indique que foi aceito,
-                        // ou reconstruir o mapa pendingInvites sem a chave.
-                        // A forma mais robusta é ler o mapa, remover a chave e reescrever.
-                        // Para este exemplo, vamos usar updateDoc para remover o campo específico.
-                        // O Firebase SDK trata `deleteField()` para remover chaves de mapas.
-                        // No entanto, `deleteDoc` não é o correto aqui. `FieldValue.delete()` é o correto.
-                        // Mas `FieldValue` não está importado. A forma mais simples é setar para null ou
-                        // ler o mapa, remover a chave e reescrever.
-                        // Por agora, vamos focar em adicionar o membro e atualizar o user.
-                        // A remoção do pendingInvite pode ser feita depois ou com lógica mais complexa.
-
-                        const updateData = {};
-                        updateData[`members.${currentUserId}`] = { name: currentUserName, email: currentUserEmail };
-                        updateData[`pendingInvites.${safeEmailKey}`] = null; // Ou use FieldValue.delete() se importado
-
-                        transaction.update(householdDocRef, updateData);
-                        transaction.set(userDocRef, { activeHouseholdId: householdIdToJoin, email: currentUserEmail, displayName: currentUserName }, { merge: true });
-                    });
-
-                    activeHouseholdId = householdIdToJoin; 
-                    console.log(`Usuário ${currentUserId} aceitou convite para família ${activeHouseholdId}`);
-                    await setupFirestoreListener(activeHouseholdId); 
-                    showScreen('app');
-                    populateManageHouseholdUI();
-                } catch (error) {
-                    console.error("Erro ao aceitar convite:", error);
-                    alert("Erro ao aceitar convite: " + error.message);
-                    showScreen('household'); 
-                }
-            }
+            function populateCategorySelect() {
+                const currentType = transactionTypeSelect.value;
+                const categories = currentType === 'Receita' ? localConfig.incomeCategories : localConfig.expenseCategories;
+                transactionCategorySelect.innerHTML = '';
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    transactionCategorySelect.appendChild(option);
+                });
+            };
             
-            function populateManageHouseholdUI() {
-                if (householdData && activeHouseholdId) {
-                    createHouseholdSection.classList.add('hidden-section');
-                    manageHouseholdSection.classList.remove('hidden-section');
-                    acceptInviteSection.classList.add('hidden-section'); 
-                    displayHouseholdName.textContent = householdData.name || 'Família sem nome';
-                    displayHouseholdId.textContent = activeHouseholdId;
-
-                    householdMembersList.innerHTML = '';
-                    if (householdData.members) {
-                        Object.values(householdData.members).forEach(member => {
-                            const li = document.createElement('li');
-                            li.textContent = member.name || member.email;
-                            householdMembersList.appendChild(li);
-                        });
-                    }
-                    inviteMemberForm.classList.toggle('hidden-section', userId !== householdData.ownerId);
-                } else {
-                    createHouseholdSection.classList.remove('hidden-section');
-                    manageHouseholdSection.classList.add('hidden-section');
-                    if (userId && userEmail) { 
-                        checkAndDisplayInvites(userEmail, userId);
-                    } else {
-                         acceptInviteSection.classList.add('hidden-section');
-                    }
+            function renderTable(data) { 
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    noTransactionsMsg.classList.remove('hidden');
+                    return;
                 }
-            }
+                noTransactionsMsg.classList.add('hidden');
+                
+                data.forEach(t => {
+                    const row = document.createElement('tr');
+                    row.className = `border-b border-slate-100 ${t.type === 'Receita' ? 'bg-green-50/50' : 'bg-red-50/50'}`;
+                    const displayDate = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data inválida';
+                    row.innerHTML = `
+                        <td class="p-3 text-slate-600">${displayDate}</td>
+                        <td class="p-3 font-medium text-slate-800">${String(t.description || '')}</td>
+                        <td class="p-3 text-slate-600">${String(t.category || '')}</td>
+                        <td class="p-3 font-semibold text-right ${t.type === 'Receita' ? 'text-green-700' : 'text-red-700'}">${formatCurrency(t.amount || 0)}</td>
+                        <td class="p-3 text-slate-600">${String(t.createdByName || 'Desconhecido')}</td>
+                        <td class="p-3 text-center">
+                            <button data-id="${t.id}" class="delete-btn text-slate-400 hover:text-red-600">&#10005;</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            };
+            
+            function destroyCharts() { 
+                 Object.values(charts).forEach(chart => {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                });
+                charts = {};
+             };
+
+            function renderCharts(income, expense, expensesByCategory) { 
+                 destroyCharts();
+                const categoryNames = Object.keys(expensesByCategory);
+                const categoryValues = Object.values(expensesByCategory);
+
+                if (document.getElementById('expenses-by-category-chart')) {
+                    const ctxCategory = document.getElementById('expenses-by-category-chart').getContext('2d');
+                    charts.categoryChart = new Chart(ctxCategory, {type: 'doughnut', data: {labels: categoryNames.length > 0 ? categoryNames : ['Nenhuma despesa'], datasets: [{data: categoryValues.length > 0 ? categoryValues : [1], backgroundColor: categoryValues.length > 0 ? ['#4f46e5', '#7c3aed', '#db2777', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6'] : ['#e5e7eb'], borderColor: '#ffffff', borderWidth: 4,}]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: { position: 'right', labels: { boxWidth: 20, padding: 20 } }, tooltip: {callbacks: {label: function(context) {let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) {label += formatCurrency(context.parsed);} return label;}}}}}});
+                }
+                if (document.getElementById('income-vs-expense-chart')) {
+                    const ctxIncomeVsExpense = document.getElementById('income-vs-expense-chart').getContext('2d');
+                    charts.incomeVsExpenseChart = new Chart(ctxIncomeVsExpense, {type: 'bar', data: {labels: ['Fluxo de Caixa'], datasets: [{ label: 'Receitas', data: [income], backgroundColor: '#22c55e', borderRadius: 4 },{ label: 'Despesas', data: [expense], backgroundColor: '#ef4444', borderRadius: 4 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true, ticks: { callback: (value) => formatCurrency(value) } } }}});
+                }
+            };
+
+            function updateDashboard() { 
+                console.log("Atualizando dashboard para o mês:", selectedMonthYear);
+                if (!selectedMonthYear) {
+                    console.warn("Mês não selecionado no updateDashboard, limpando dados da UI.");
+                    totalIncomeEl.textContent = formatCurrency(0);totalExpenseEl.textContent = formatCurrency(0);balanceEl.textContent = formatCurrency(0);renderTable([]);renderCharts(0, 0, {}); return;
+                }
+                const filteredTransactions = transactions.filter(t => t.date && t.date.startsWith(selectedMonthYear));
+                console.log(`Total de transações (todas): ${transactions.length}, Transações filtradas para ${selectedMonthYear}: ${filteredTransactions.length}`);
+                let totalIncome = 0; let totalExpense = 0; const expensesByCategory = {};
+                filteredTransactions.forEach(t => {if (t.type === 'Receita') {totalIncome += t.amount;} else {totalExpense += t.amount; if(expensesByCategory[t.category]){expensesByCategory[t.category] += t.amount;} else {expensesByCategory[t.category] = t.amount;}}});
+                const balance = totalIncome - totalExpense;
+                totalIncomeEl.textContent = formatCurrency(totalIncome);totalExpenseEl.textContent = formatCurrency(totalExpense);balanceEl.textContent = formatCurrency(balance);balanceEl.classList.toggle('text-red-600', balance < 0);balanceEl.classList.toggle('text-slate-700', balance >= 0);
+                renderTable(filteredTransactions.sort((a,b) => new Date(b.date) - new Date(a.date)));renderCharts(totalIncome, totalExpense, expensesByCategory);console.log("Dashboard atualizado.");
+            };
 
             async function handleFormSubmit(e) { 
                 e.preventDefault();
@@ -686,7 +538,7 @@
                 }
             };
             
-             const openModal = () => {
+            function openModal() {
                 transactionForm.reset();
                 const today = new Date().toISOString().split('T')[0];
                 transactionDateInput.value = today;
@@ -700,75 +552,13 @@
                 }, 10);
             };
 
-            const closeModal = () => {
+            function closeModal() {
                 modalContent.classList.add('-translate-y-16', 'opacity-0');
                 modalContent.classList.remove('translate-y-0', 'opacity-100');
                 setTimeout(() => {
                     modalEl.classList.add('hidden'); 
                     modalEl.classList.remove('flex');
                 }, 300);
-            };
-
-             const renderTable = (data) => { 
-                tableBody.innerHTML = '';
-                if (data.length === 0) {
-                    noTransactionsMsg.classList.remove('hidden');
-                    return;
-                }
-                noTransactionsMsg.classList.add('hidden');
-                
-                data.forEach(t => {
-                    const row = document.createElement('tr');
-                    row.className = `border-b border-slate-100 ${t.type === 'Receita' ? 'bg-green-50/50' : 'bg-red-50/50'}`;
-                    const displayDate = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data inválida';
-                    row.innerHTML = `
-                        <td class="p-3 text-slate-600">${displayDate}</td>
-                        <td class="p-3 font-medium text-slate-800">${t.description || ''}</td>
-                        <td class="p-3 text-slate-600">${t.category || ''}</td>
-                        <td class="p-3 font-semibold text-right ${t.type === 'Receita' ? 'text-green-700' : 'text-red-700'}">${formatCurrency(t.amount || 0)}</td>
-                        <td class="p-3 text-slate-600">${t.createdByName || 'Desconhecido'}</td>
-                        <td class="p-3 text-center">
-                            <button data-id="${t.id}" class="delete-btn text-slate-400 hover:text-red-600">&#10005;</button>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-            };
-             const destroyCharts = () => { 
-                 Object.values(charts).forEach(chart => {
-                    if (chart && typeof chart.destroy === 'function') {
-                        chart.destroy();
-                    }
-                });
-                charts = {};
-             };
-            const renderCharts = (income, expense, expensesByCategory) => { 
-                 destroyCharts();
-                const categoryNames = Object.keys(expensesByCategory);
-                const categoryValues = Object.values(expensesByCategory);
-
-                if (document.getElementById('expenses-by-category-chart')) {
-                    const ctxCategory = document.getElementById('expenses-by-category-chart').getContext('2d');
-                    charts.categoryChart = new Chart(ctxCategory, {type: 'doughnut', data: {labels: categoryNames.length > 0 ? categoryNames : ['Nenhuma despesa'], datasets: [{data: categoryValues.length > 0 ? categoryValues : [1], backgroundColor: categoryValues.length > 0 ? ['#4f46e5', '#7c3aed', '#db2777', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6'] : ['#e5e7eb'], borderColor: '#ffffff', borderWidth: 4,}]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: { position: 'right', labels: { boxWidth: 20, padding: 20 } }, tooltip: {callbacks: {label: function(context) {let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) {label += formatCurrency(context.parsed);} return label;}}}}}});
-                }
-                if (document.getElementById('income-vs-expense-chart')) {
-                    const ctxIncomeVsExpense = document.getElementById('income-vs-expense-chart').getContext('2d');
-                    charts.incomeVsExpenseChart = new Chart(ctxIncomeVsExpense, {type: 'bar', data: {labels: ['Fluxo de Caixa'], datasets: [{ label: 'Receitas', data: [income], backgroundColor: '#22c55e', borderRadius: 4 },{ label: 'Despesas', data: [expense], backgroundColor: '#ef4444', borderRadius: 4 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true, ticks: { callback: (value) => formatCurrency(value) } } }}});
-                }
-            };
-            const updateDashboard = () => { 
-                console.log("Atualizando dashboard para o mês:", selectedMonthYear);
-                if (!selectedMonthYear) {
-                    console.warn("Mês não selecionado no updateDashboard, limpando dados da UI.");
-                    totalIncomeEl.textContent = formatCurrency(0);totalExpenseEl.textContent = formatCurrency(0);balanceEl.textContent = formatCurrency(0);renderTable([]);renderCharts(0, 0, {}); return;
-                }
-                const filteredTransactions = transactions.filter(t => t.date && t.date.startsWith(selectedMonthYear));
-                console.log(`Total de transações (todas): ${transactions.length}, Transações filtradas para ${selectedMonthYear}: ${filteredTransactions.length}`);
-                let totalIncome = 0; let totalExpense = 0; const expensesByCategory = {};
-                filteredTransactions.forEach(t => {if (t.type === 'Receita') {totalIncome += t.amount;} else {totalExpense += t.amount; if(expensesByCategory[t.category]){expensesByCategory[t.category] += t.amount;} else {expensesByCategory[t.category] = t.amount;}}});
-                const balance = totalIncome - totalExpense;
-                totalIncomeEl.textContent = formatCurrency(totalIncome);totalExpenseEl.textContent = formatCurrency(totalExpense);balanceEl.textContent = formatCurrency(balance);balanceEl.classList.toggle('text-red-600', balance < 0);balanceEl.classList.toggle('text-slate-700', balance >= 0);
-                renderTable(filteredTransactions.sort((a,b) => new Date(b.date) - new Date(a.date)));renderCharts(totalIncome, totalExpense, expensesByCategory);console.log("Dashboard atualizado.");
             };
 
             async function setupFirestoreListener(currentHouseholdId) {
@@ -788,7 +578,7 @@
                     const firestoreTransactions = [];
                     snapshot.forEach((doc) => firestoreTransactions.push({ id: doc.id, ...doc.data() }));
                     transactions = firestoreTransactions;
-                    console.log(`onSnapshot (household): ${transactions.length} transações carregadas.`);
+                    console.log(`onSnapshot (household): ${transactions.length} transações foram carregadas.`);
                     
                     const currentSelectedMonthBeforeRepopulate = selectedMonthYear;
                     populateMonthFilter();
@@ -804,29 +594,237 @@
                     transactions = []; updateDashboard(); 
                 });
 
-                // Também escutar mudanças no próprio documento do household (para atualizar lista de membros, nome, etc.)
                 const householdDocRef = doc(db, "households", currentHouseholdId);
                 onSnapshot(householdDocRef, (docSnap) => {
                     if (docSnap.exists()) {
                         householdData = { id: docSnap.id, ...docSnap.data() };
                         console.log("Dados do Household atualizados (onSnapshot):", householdData);
                         if (document.getElementById('household-section').classList.contains('hidden-section') === false) {
-                             populateManageHouseholdUI(); // Atualiza UI de gerenciamento se estiver visível
+                             populateManageHouseholdUI(); 
                         }
                     } else {
                         console.warn("Documento do household não encontrado mais:", currentHouseholdId);
-                        // Tratar o caso onde o household foi deletado?
                     }
                 });
             }
+            
+            async function createHousehold() { 
+                const name = householdNameInput.value.trim() || `Família de ${userDisplayName || userEmail}`;
+                if (!userId) {
+                    householdErrorEl.textContent = "Usuário não logado.";
+                    return;
+                }
+                showScreen('loading');
+                try {
+                    const householdRef = await addDoc(collection(db, "households"), {
+                        ownerId: userId,
+                        name: name,
+                        members: { [userId]: { name: userDisplayName || userEmail, email: userEmail } }, 
+                        pendingInvites: {}
+                    });
+                    activeHouseholdId = householdRef.id;
+                    householdData = { id: activeHouseholdId, ownerId: userId, name: name, members: { [userId]: { name: userDisplayName || userEmail, email: userEmail } }, pendingInvites: {} };
+
+                    const userDocRef = doc(db, "users", userId);
+                    await runTransaction(db, async (transaction) => {
+                        transaction.set(userDocRef, { 
+                            activeHouseholdId: activeHouseholdId, 
+                            email: userEmail, 
+                            displayName: userDisplayName 
+                        }, { merge: true }); 
+                    });
+                    
+                    console.log("Família criada com ID:", activeHouseholdId);
+                    await setupFirestoreListener(activeHouseholdId); 
+                    showScreen('app');
+                    populateManageHouseholdUI(); 
+                } catch (error) {
+                    console.error("Erro ao criar família:", error);
+                    householdErrorEl.textContent = "Erro ao criar família: " + error.message;
+                    showScreen('household'); 
+                }
+            }
+
+            async function handleInviteMember(e) { 
+                e.preventDefault();
+                const targetEmail = inviteEmailInput.value.trim();
+                if (!targetEmail || !activeHouseholdId || !householdData) {
+                    inviteStatusEl.textContent = "Dados da família ou email inválidos.";
+                    return;
+                }
+                if (userId !== householdData.ownerId) {
+                    inviteStatusEl.textContent = "Apenas o proprietário pode convidar membros.";
+                    return;
+                }
+                showScreen('loading');
+                try {
+                    const isAlreadyMember = Object.values(householdData.members || {}).some(member => member.email === targetEmail);
+                    const safeEmailKeyForCheck = targetEmail.replace(/\./g, ',');
+                    const isAlreadyInvited = householdData.pendingInvites && householdData.pendingInvites[safeEmailKeyForCheck];
+
+                    if (isAlreadyMember) {
+                        inviteStatusEl.textContent = "Este email já é membro da família.";
+                        showScreen('household'); populateManageHouseholdUI(); return;
+                    }
+                    if (isAlreadyInvited) {
+                        inviteStatusEl.textContent = "Este email já foi convidado.";
+                        showScreen('household'); populateManageHouseholdUI(); return;
+                    }
+
+                    const householdDocRef = doc(db, "households", activeHouseholdId);
+                    const safeEmailKeyForWrite = targetEmail.replace(/\./g, ','); 
+                    
+                    await updateDoc(householdDocRef, {
+                        [`pendingInvites.${safeEmailKeyForWrite}`]: { invitedBy: userId, invitedByName: userDisplayName || userEmail, timestamp: serverTimestamp() }
+                    });
+                    
+                    inviteStatusEl.textContent = `Convite enviado para ${targetEmail}!`;
+                    inviteEmailInput.value = '';
+                } catch (error) {
+                    console.error("Erro ao convidar membro:", error);
+                    inviteStatusEl.textContent = "Erro ao enviar convite.";
+                } finally {
+                    showScreen('household'); 
+                }
+            }
+
+            async function checkAndDisplayInvites(targetUserEmail, currentUserId) { 
+                if (!targetUserEmail) return;
+                console.log("Verificando convites para:", targetUserEmail);
+                pendingInvitesListEl.innerHTML = '';
+                acceptInviteSection.classList.remove('hidden-section');
+                noPendingInvitesMsg.classList.remove('hidden-section'); 
+
+                try {
+                    const safeEmailKey = targetUserEmail.replace(/\./g, ',');
+                    const q = query(collection(db, "households"), where(`pendingInvites.${safeEmailKey}.invitedBy`, "!=", null)); 
+                    const snapshot = await getDocs(q);
+                    let foundInvites = false;
+                    snapshot.forEach(householdDoc => {
+                        const household = { id: householdDoc.id, ...householdDoc.data() };
+                        if (household.pendingInvites && household.pendingInvites[safeEmailKey] && household.pendingInvites[safeEmailKey].invitedBy) {
+                            const inviteData = household.pendingInvites[safeEmailKey];
+                            foundInvites = true;
+                            noPendingInvitesMsg.classList.add('hidden-section');
+                            const inviteItem = document.createElement('div');
+                            inviteItem.className = 'p-3 mb-2 border rounded-md bg-slate-50 flex justify-between items-center';
+                            inviteItem.innerHTML = `<span>Convidado para "${household.name || 'Família sem nome'}" por ${inviteData.invitedByName || 'Alguém'}</span>`;
+                            const acceptBtn = document.createElement('button');
+                            acceptBtn.className = 'bg-green-500 text-white text-sm py-1 px-2 rounded hover:bg-green-600';
+                            acceptBtn.textContent = 'Aceitar';
+                            acceptBtn.onclick = async () => {
+                                await acceptInvite(household.id, currentUserId, targetUserEmail, userDisplayName || userEmail);
+                            };
+                            inviteItem.appendChild(acceptBtn);
+                            pendingInvitesListEl.appendChild(inviteItem);
+                        }
+                    });
+                     if (!foundInvites) console.log("Nenhum convite pendente encontrado para", targetUserEmail);
+                     else console.log("Convites pendentes exibidos.");
+
+                } catch (error) {
+                    console.error("Erro ao buscar convites:", error);
+                    noPendingInvitesMsg.textContent = "Erro ao buscar convites.";
+                }
+            }
+            
+            async function acceptInvite(householdIdToJoin, currentUserId, currentUserEmail, currentUserName) { 
+                 showScreen('loading');
+                try {
+                    const householdDocRef = doc(db, "households", householdIdToJoin);
+                    const userDocRef = doc(db, "users", currentUserId);
+                    const safeEmailKey = currentUserEmail.replace(/\./g, ',');
+
+                    await runTransaction(db, async (transaction) => {
+                        const householdSnap = await transaction.get(householdDocRef);
+                        if (!householdSnap.exists()) throw "Família não encontrada.";
+                        
+                        const householdUpdateData = {};
+                        householdUpdateData[`members.${currentUserId}`] = { name: currentUserName, email: currentUserEmail };
+                        householdUpdateData[`pendingInvites.${safeEmailKey}`] = deleteField(); 
+
+                        transaction.update(householdDocRef, householdUpdateData);
+                        transaction.set(userDocRef, { activeHouseholdId: householdIdToJoin, email: currentUserEmail, displayName: currentUserName }, { merge: true });
+                    });
+
+                    activeHouseholdId = householdIdToJoin; 
+                    console.log(`Usuário ${currentUserId} aceitou convite para família ${activeHouseholdId}`);
+                    await setupFirestoreListener(activeHouseholdId); 
+                    showScreen('app');
+                    populateManageHouseholdUI();
+                } catch (error) {
+                    console.error("Erro ao aceitar convite:", error);
+                    alert("Erro ao aceitar convite: " + error.message);
+                    showScreen('household'); 
+                }
+            }
+
+            function populateManageHouseholdUI() { 
+                if (householdData && activeHouseholdId) {
+                    createHouseholdSection.classList.add('hidden-section');
+                    manageHouseholdSection.classList.remove('hidden-section');
+                    acceptInviteSection.classList.add('hidden-section'); 
+                    displayHouseholdName.textContent = householdData.name || 'Família sem nome';
+                    displayHouseholdId.textContent = activeHouseholdId;
+
+                    householdMembersList.innerHTML = '';
+                    if (householdData.members) {
+                        Object.values(householdData.members).forEach(member => {
+                            const li = document.createElement('li');
+                            li.textContent = member.name || member.email;
+                            householdMembersList.appendChild(li);
+                        });
+                    }
+                    inviteMemberForm.classList.toggle('hidden-section', userId !== householdData.ownerId);
+                } else {
+                    createHouseholdSection.classList.remove('hidden-section');
+                    manageHouseholdSection.classList.add('hidden-section');
+                    if (userId && userEmail) { 
+                        checkAndDisplayInvites(userEmail, userId);
+                    } else {
+                         acceptInviteSection.classList.add('hidden-section');
+                    }
+                }
+            }
+            // --- END FUNCTION DECLARATIONS ---
+
+            showRegisterFormBtn.addEventListener('click', () => toggleAuthForms(false));
+            showLoginFormBtn.addEventListener('click', () => toggleAuthForms(true));
+            loginForm.addEventListener('submit', async (e) => { 
+                 e.preventDefault(); clearAuthErrors(); showScreen('loading');
+                const email = loginEmailInput.value; const password = loginPasswordInput.value;
+                try { await signInWithEmailAndPassword(auth, email, password); } catch (error) { console.error("Erro no login E-mail/Senha:", error); showAuthError('login', traduireErroAuth(error.code)); showScreen('auth'); } 
+            });
+            registerForm.addEventListener('submit', async (e) => { 
+                 e.preventDefault(); clearAuthErrors();
+                const email = registerEmailInput.value; const password = registerPasswordInput.value; const confirmPassword = registerConfirmPasswordInput.value;
+                if (password !== confirmPassword) { showAuthError('register', "As senhas não coincidem."); return; }
+                if (password.length < 6) { showAuthError('register', "A senha deve ter no mínimo 6 caracteres."); return; }
+                showScreen('loading');
+                try { await createUserWithEmailAndPassword(auth, email, password); toggleAuthForms(true); loginEmailInput.value = email; loginPasswordInput.value = ''; loginErrorEl.textContent = "Registro realizado! Faça o login."; showScreen('auth'); } catch (error) { console.error("Erro no registro E-mail/Senha:", error); showAuthError('register', traduireErroAuth(error.code)); showScreen('auth'); } 
+            });
+            googleSignInBtn.addEventListener('click', async () => { 
+                clearAuthErrors(); showScreen('loading'); const provider = new GoogleAuthProvider();
+                try { await signInWithPopup(auth, provider); } catch (error) { console.error("Erro no login com Google:", error); showAuthError('google', traduireErroAuth(error.code)); showScreen('auth');} 
+            });
+            logoutBtn.addEventListener('click', async () => {
+                showScreen('loading'); try { await signOut(auth); } catch (error) { console.error("Erro no logout:", error); alert("Erro ao sair."); showScreen('auth'); } 
+            });
+            createHouseholdBtn.addEventListener('click', createHousehold);
+            inviteMemberForm.addEventListener('submit', handleInviteMember);
+            monthFilter.addEventListener('change', (e) => { selectedMonthYear = e.target.value; updateDashboard(); });
+            addTransactionBtn.addEventListener('click', openModal);
+            closeModalBtn.addEventListener('click', closeModal);
+            modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+            transactionForm.addEventListener('submit', handleFormSubmit);
+            transactionTypeSelect.addEventListener('change', populateCategorySelect);
+            tableBody.addEventListener('click', handleDelete);
 
             onAuthStateChanged(auth, async (user) => {
                 console.log("onAuthStateChanged disparado. User:", user ? user.uid : 'null');
-                showScreen('loading');
+                showScreen('loading'); 
                 if (user) {
-                    userId = user.uid;
-                    userEmail = user.email;
-                    userDisplayName = user.displayName;
+                    userId = user.uid; userEmail = user.email; userDisplayName = user.displayName;
                     clearAuthErrors(); 
 
                     const userDocRef = doc(db, "users", userId);
@@ -847,8 +845,18 @@
                              showScreen('household');
                              populateManageHouseholdUI();
                         }
-                    } else {
-                        console.log("Usuário logado, mas sem activeHouseholdId. Exibindo tela de configuração de família.");
+                    } else { 
+                        console.log("Usuário logado, mas sem activeHouseholdId ou perfil. Exibindo tela de configuração de família.");
+                        if (!userDocSnap.exists()) {
+                            try {
+                                await runTransaction(db, async (transaction) => {
+                                    transaction.set(userDocRef, { email: userEmail, displayName: userDisplayName }, { merge: true });
+                                });
+                                console.log("Perfil de usuário criado/atualizado para:", userId);
+                            } catch (profileError) {
+                                console.error("Erro ao criar/atualizar perfil do usuário:", profileError);
+                            }
+                        }
                         activeHouseholdId = null; householdData = null;
                         if (unsubscribeFirestore) unsubscribeFirestore(); 
                         transactions = []; populateMonthFilter(); updateDashboard(); 
@@ -866,7 +874,7 @@
 
                 } else { 
                     userId = null; userEmail = null; userDisplayName = null; activeHouseholdId = null; householdData = null;
-                    if (unsubscribeFirestore) unsubscribeFirestore();
+                    if (unsubscribeFirestore) { unsubscribeFirestore(); unsubscribeFirestore = null; }
                     transactions = []; selectedMonthYear = null; 
                     populateMonthFilter(); updateDashboard(); 
                     
@@ -878,14 +886,6 @@
                     console.log("Usuário deslogado. Exibindo tela de autenticação.");
                 }
             });
-            
-            monthFilter.addEventListener('change', (e) => { selectedMonthYear = e.target.value; updateDashboard(); });
-            addTransactionBtn.addEventListener('click', openModal);
-            closeModalBtn.addEventListener('click', closeModal);
-            modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
-            transactionForm.addEventListener('submit', handleFormSubmit);
-            transactionTypeSelect.addEventListener('change', populateCategorySelect);
-            tableBody.addEventListener('click', handleDelete);
             
             if (!auth.currentUser) {
                 showScreen('auth');

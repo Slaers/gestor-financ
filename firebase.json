@@ -1,16 +1,11 @@
 {
   "firestore": {
-    "database": "(default)",
-    "location": "southamerica-east1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+    // Se você tinha "database": "(default)", pode manter ou remover se for o padrão
   },
   "hosting": {
-<<<<<<< HEAD
-    "public": ".",
-=======
-    "public": "public",
->>>>>>> 0b24a5428881cfcd732381729f2166c0b87c7acb
+    "public": ".", // Ou a pasta correta onde está seu index.html
     "ignore": [
       "firebase.json",
       "**/.*",
