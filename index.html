@@ -165,8 +165,14 @@
                 <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Saldo do Mês</h2><p id="balance" class="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-300 mt-2">R$ 0,00</p></div>
             </section>
             <section class="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8 mb-6 sm:mb-8">
-                <div class="lg:col-span-3 bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Despesas por Categoria</h3><div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]"><canvas id="expenses-by-category-chart"></canvas></div></div>
-                <div class="lg:col-span-2 bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Receitas vs Despesas</h3><div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]"><canvas id="income-vs-expense-chart"></canvas></div></div>
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Despesas por Categoria</h3><div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]"><canvas id="expenses-by-category-chart"></canvas></div></div>
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Receitas por Categoria</h3>
+                    <div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]">
+                        <canvas id="incomes-by-category-chart"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-1 bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Receitas vs Despesas</h3><div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]"><canvas id="income-vs-expense-chart"></canvas></div></div>
             </section>
             <section class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
                 <div class="flex justify-between items-center mb-4">
@@ -762,17 +768,17 @@
                 });
             };
             
-            function destroyCharts() { 
-                 Object.values(charts).forEach(chart => {
+            function destroyCharts() {
+                Object.values(charts).forEach(chart => {
                     if (chart && typeof chart.destroy === 'function') {
                         chart.destroy();
                     }
                 });
-                charts = {};
-             };
+                charts = {}; // Reset the charts object
+            };
 
-            function renderCharts(income, expense, expensesByCategory) { 
-                 destroyCharts();
+            function renderCharts(income, expense, expensesByCategory, incomesByCategory) {
+                 destroyCharts(); // This will now also clear charts.incomesByCategoryChart if it exists
                 const categoryNames = Object.keys(expensesByCategory);
                 const categoryValues = Object.values(expensesByCategory);
                 const expensesChartEl = document.getElementById('expenses-by-category-chart');
@@ -809,7 +815,24 @@
                 const filteredTransactions = transactions.filter(t => t.date && t.date.startsWith(selectedMonthYear));
                 console.log(`Total de transações (todas): ${transactions.length}, Transações filtradas para ${selectedMonthYear}: ${filteredTransactions.length}`);
                 let totalIncome = 0; let totalExpense = 0; const expensesByCategory = {};
-                filteredTransactions.forEach(t => {if (t.type === 'Receita') {totalIncome += t.amount;} else {totalExpense += t.amount; if(expensesByCategory[t.category]){expensesByCategory[t.category] += t.amount;} else {expensesByCategory[t.category] = t.amount;}}});
+                const incomesByCategory = {};
+                filteredTransactions.forEach(t => {
+                    if (t.type === 'Receita') {
+                        totalIncome += t.amount; // Already calculated, but harmless to repeat if logic is self-contained
+                        if (incomesByCategory[t.category]) {
+                            incomesByCategory[t.category] += t.amount;
+                        } else {
+                            incomesByCategory[t.category] = t.amount;
+                        }
+                    } else {
+                        totalExpense += t.amount;
+                        if(expensesByCategory[t.category]){
+                            expensesByCategory[t.category] += t.amount;
+                        } else {
+                            expensesByCategory[t.category] = t.amount;
+                        }
+                    }
+                });
                 const balance = totalIncome - totalExpense;
                 if(totalIncomeEl) totalIncomeEl.textContent = formatCurrency(totalIncome);
                 if(totalExpenseEl) totalExpenseEl.textContent = formatCurrency(totalExpense);
@@ -820,7 +843,9 @@
                     balanceEl.classList.toggle('text-slate-700', balance >= 0);
                     balanceEl.classList.toggle('dark:text-slate-300', balance >= 0);
                 }
-                renderTable(filteredTransactions.sort((a,b) => new Date(b.date) - new Date(a.date)));renderCharts(totalIncome, totalExpense, expensesByCategory);console.log("Dashboard atualizado.");
+                renderTable(filteredTransactions.sort((a,b) => new Date(b.date) - new Date(a.date)));
+                renderCharts(totalIncome, totalExpense, expensesByCategory, incomesByCategory); // New call signature
+                console.log("Dashboard atualizado.");
             };
 
             async function handleFormSubmit(e) { 
