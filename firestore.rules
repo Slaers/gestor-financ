@@ -61,6 +61,20 @@ service cloud.firestore {
         // nas transações desse household.
         allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
       }
+
+      // Regras para a subcoleção 'investments' dentro de um household
+      match /investments/{investmentId} {
+        // Permite que MEMBROS do household realizem todas as operações (CRUD)
+        // nas contas de investimento desse household.
+        allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
+
+        // Regras para a subcoleção 'entries' dentro de um investment
+        match /entries/{entryId} {
+          // Permite que MEMBROS do household realizem todas as operações (CRUD)
+          // nas movimentações de investimento desse household.
+          allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
+        }
+      }
     }
   }
 }
