@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investimentos - Gestão de Lançamentos</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1 class="text-2xl font-bold p-4">Painel de Investimentos</h1> <!-- Changed Page Title -->
+    <div id="investments-dashboard" class="p-4">
+        <!-- Summary Cards Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-gray-500 text-sm">Patrimônio Total Atual</h3>
+                <p id="db-total-patrimonio" class="text-2xl font-semibold">R$ 0,00 <span id="db-total-patrimonio-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span></p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-gray-500 text-sm">Total Investido</h3>
+                <p id="db-total-investido" class="text-2xl font-semibold">R$ 0,00 <span id="db-total-investido-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span></p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-gray-500 text-sm">Resultado Total (R$)</h3>
+                <p id="db-resultado-reais" class="text-2xl font-semibold text-gray-700">R$ 0,00 <span id="db-resultado-reais-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span></p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-gray-500 text-sm">Resultado Total (%)</h3>
+                <p id="db-resultado-percentual" class="text-2xl font-semibold text-gray-700">0,00% <span id="db-resultado-percentual-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span></p>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-xl font-semibold mb-2">Alocação da Carteira</h3>
+                <canvas id="alocacaoCarteiraChart"></canvas>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-xl font-semibold mb-2">Desempenho da Carteira</h3>
+                <div class="mb-2">
+                    <button class="btn-period text-sm py-1 px-2 bg-gray-200 rounded hover:bg-gray-300">1M</button>
+                    <button class="btn-period text-sm py-1 px-2 bg-gray-200 rounded hover:bg-gray-300">3M</button>
+                    <button class="btn-period text-sm py-1 px-2 bg-gray-200 rounded hover:bg-gray-300">YTD</button>
+                    <button class="btn-period text-sm py-1 px-2 bg-gray-200 rounded hover:bg-gray-300">1A</button>
+                    <button class="btn-period text-sm py-1 px-2 bg-gray-200 rounded hover:bg-gray-300">MAX</button>
+                </div>
+                <canvas id="desempenhoCarteiraChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Ações Rápidas Section -->
+        <div class="mb-6">
+            <button id="btn-add-new-investment" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Adicionar Novo Investimento</button>
+        </div>
+    </div>
+    <div id="investments-list" class="p-4 mt-6 border-t pt-6"> <!-- Added margin and border for separation -->
+        <h2 class="text-xl font-semibold mb-4">Lista Detalhada de Investimentos</h2> <!-- Changed Section Title -->
+
+        <!-- Toolbar/Controls Area -->
+        <div class="mb-4 flex flex-wrap items-center gap-2 md:gap-4"> <!-- Adjusted gap for smaller screens -->
+            <input type="search" id="search-investments" placeholder="Pesquisar por nome ou ticker..." class="p-2 border rounded w-full md:w-1/3 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <select id="filter-type" class="p-2 border rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Tipo de Investimento</option>
+                <option value="Ação">Ação</option>
+                <option value="FII">FII</option>
+                <option value="ETF">ETF</option>
+                <option value="Renda Fixa">Renda Fixa</option>
+                <option value="Criptomoeda">Criptomoeda</option>
+                <option value="Outros">Outros</option>
+            </select>
+            <select id="filter-status" class="p-2 border rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Status</option>
+                <option value="Ativo">Ativo</option>
+                <option value="Vendido/Resgatado">Vendido/Resgatado</option>
+                <option value="Vencido">Vencido</option>
+            </select>
+            <select id="filter-institution" class="p-2 border rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Instituição</option>
+                <!-- Options to be populated dynamically -->
+                <option value="XP Investimentos">XP Investimentos</option>
+                <option value="BTG Pactual">BTG Pactual</option>
+                <option value="Binance">Binance</option>
+            </select>
+        </div>
+
+        <!-- Table of Investments -->
+        <div class="overflow-x-auto bg-white shadow rounded-lg">
+            <table id="investments-table" class="min-w-full border">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nome do Investimento</th>
+                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ticker</th>
+                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Instituição</th>
+                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Qtd.</th>
+                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Preço Méd. Aq.</th>
+                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Val. Investido</th>
+                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Preço Atual</th>
+                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Val. Total Atual</th>
+                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Resultado (R$)</th>
+                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Resultado (%)</th>
+                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">% Carteira</th>
+                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vencimento</th>
+                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="p-3 border-b text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="investments-table-body">
+                    <tr id="investments-table-loading" class="text-center">
+                        <td colspan="15" class="p-4 text-gray-500">Carregando investimentos...</td>
+                    </tr>
+                    <!-- Sample Row for Visualization -->
+                    <tr class="hover:bg-gray-50 border-b">
+                        <td class="p-3 text-sm text-gray-700">Tesouro Selic 2029</td>
+                        <td class="p-3 text-sm text-gray-700">TS2029</td>
+                        <td class="p-3 text-sm text-gray-700">Tesouro Direto</td>
+                        <td class="p-3 text-sm text-gray-700">XP Investimentos</td>
+                        <td class="p-3 text-sm text-gray-700 text-right">2</td>
+                        <td class="p-3 text-sm text-gray-700 text-right">R$ 13.800,00</td>
+                        <td class="p-3 text-sm text-gray-700 text-right">R$ 27.600,00</td>
+                        <td class="p-3 text-sm text-gray-700 text-right">R$ 14.000,00</td>
+                        <td class="p-3 text-sm text-gray-700 text-right">R$ 28.000,00</td>
+                        <td class="p-3 text-sm text-green-600 text-right">R$ 400,00</td>
+                        <td class="p-3 text-sm text-green-600 text-right">1.45%</td>
+                        <td class="p-3 text-sm text-gray-700 text-right">15.00%</td>
+                        <td class="p-3 text-sm text-gray-700">01/01/2029</td>
+                        <td class="p-3 text-sm text-gray-700"><span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">Ativo</span></td>
+                        <td class="p-3 text-sm text-gray-700 text-center whitespace-nowrap">
+                            <button class="text-blue-600 hover:text-blue-800 p-1" title="Ver Detalhes/Editar" aria-label="Ver Detalhes ou Editar Investimento">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828zM5 12V7.172l2.586-2.586A2 2 0 0110 4.172l-2.586 2.586L5 9.172V12zM15 14H5a1 1 0 00-1 1v2a1 1 0 001 1h10a1 1 0 001-1v-2a1 1 0 00-1-1z"/></svg>
+                            </button>
+                            <button class="text-green-600 hover:text-green-800 p-1" title="Registrar Transação" aria-label="Registrar Nova Transação para este Investimento">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                            </button>
+                            <button class="text-red-600 hover:text-red-800 p-1" title="Excluir" aria-label="Excluir Investimento">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- More rows will be added here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/investment-logic.js"></script>
+    <script>
+        const alocacaoCtx = document.getElementById('alocacaoCarteiraChart')?.getContext('2d');
+        if (alocacaoCtx) {
+          new Chart(alocacaoCtx, {
+            type: 'doughnut', // or 'pie'
+            data: {
+              labels: ['Renda Fixa', 'Ações', 'FIIs'], // Placeholder
+              datasets: [{
+                label: 'Alocação',
+                data: [50, 30, 20], // Placeholder
+                backgroundColor: ['#4CAF50', '#2196F3', '#FFC107'], // Placeholder colors
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'top' },
+                tooltip: { callbacks: { label: function(context) { return context.label + ': ' + context.raw.toFixed(2) + '%'; } } }
+              }
+            }
+          });
+        }
+
+        const desempenhoCtx = document.getElementById('desempenhoCarteiraChart')?.getContext('2d');
+        if (desempenhoCtx) {
+          new Chart(desempenhoCtx, {
+            type: 'line',
+            data: {
+              labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'], // Placeholder
+              datasets: [{
+                label: 'Valor da Carteira',
+                data: [1000, 1050, 1020, 1080, 1100], // Placeholder
+                borderColor: '#4CAF50',
+                tension: 0.1
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: { y: { beginAtZero: false } },
+              plugins: { legend: { display: false } }
+            }
+          });
+        }
+
+        // Modal toggle script
+        const investmentModal = document.getElementById('investment-form-modal');
+        const addInvestmentBtn = document.getElementById('btn-add-new-investment');
+        const closeBtn = document.getElementById('modal-close-btn');
+        const cancelBtn = document.getElementById('modal-cancel-btn');
+
+        addInvestmentBtn?.addEventListener('click', () => {
+          investmentModal.classList.remove('hidden');
+          document.getElementById('modal-title').textContent = 'Adicionar Novo Investimento';
+          document.getElementById('investment-form').reset();
+          // Reset dynamic sections visibility if needed
+          document.getElementById('rf-specific-fields').classList.add('hidden');
+          document.getElementById('acoes-specific-fields').classList.add('hidden');
+          document.getElementById('fundos-specific-fields').classList.add('hidden');
+          document.getElementById('crypto-specific-fields').classList.add('hidden');
+        });
+        closeBtn?.addEventListener('click', () => investmentModal.classList.add('hidden'));
+        cancelBtn?.addEventListener('click', () => investmentModal.classList.add('hidden'));
+        investmentModal?.addEventListener('click', (event) => {
+          if (event.target === investmentModal) {
+            investmentModal.classList.add('hidden');
+          }
+        });
+
+        // Basic dynamic field display logic (example)
+        const investmentTypeSelect = document.getElementById('investment_type');
+        investmentTypeSelect?.addEventListener('change', function() {
+          const type = this.value;
+          document.getElementById('rf-specific-fields').classList.add('hidden');
+          document.getElementById('acoes-specific-fields').classList.add('hidden');
+          document.getElementById('fundos-specific-fields').classList.add('hidden');
+          document.getElementById('crypto-specific-fields').classList.add('hidden');
+
+          if (type === 'Tesouro Direto' || type === 'CDB' || type === 'LCI' || type === 'LCA' || type === 'Debênture' || type === 'Poupança') {
+            document.getElementById('rf-specific-fields').classList.remove('hidden');
+          } else if (type === 'Ação') {
+            document.getElementById('acoes-specific-fields').classList.remove('hidden');
+          } else if (type === 'FII' || type === 'ETF' || type === 'Fundo de Investimento') {
+            document.getElementById('fundos-specific-fields').classList.remove('hidden');
+          } else if (type === 'Moeda Digital') {
+            document.getElementById('crypto-specific-fields').classList.remove('hidden');
+          }
+        });
+
+        // Detail Modal toggle script
+        const investmentDetailModal = document.getElementById('investment-detail-modal');
+        const detailCloseBtn = document.getElementById('detail-modal-close-btn');
+
+        // Function to open detail modal (to be called from investment list)
+        function openInvestmentDetailModal(investmentId) { // investmentId is a placeholder for the actual data object
+          // In a real scenario, you'd fetch investment data using investmentId here
+          // and populate the #investment-detail-content and #transaction_log_body
+          // For now, just populating a few static fields as an example:
+          document.getElementById('detail-modal-title').textContent = 'Detalhes do Investimento: Tesouro Selic 2029'; // Example
+          document.getElementById('detail-investment_name').textContent = 'Tesouro Selic 2029';
+          document.getElementById('detail-asset_ticker_symbol').textContent = 'TS2029';
+          document.getElementById('detail-investment_type').textContent = 'Tesouro Direto';
+          document.getElementById('detail-institution').textContent = 'XP Investimentos';
+          document.getElementById('detail-total_quantity').textContent = '2';
+          document.getElementById('detail-weighted_average_acquisition_price').textContent = 'R$ 13.800,00';
+          document.getElementById('detail-total_invested_amount').textContent = 'R$ 27.600,00';
+          document.getElementById('detail-current_unit_price').textContent = 'R$ 14.000,00';
+          document.getElementById('detail-current_total_value').textContent = 'R$ 28.000,00';
+          document.getElementById('detail-profit_loss_absolute').textContent = 'R$ 400,00';
+          document.getElementById('detail-profit_loss_percentage').textContent = '1.45%';
+          document.getElementById('detail-percentage_of_portfolio').textContent = '15.00%';
+          document.getElementById('detail-status').textContent = 'Ativo';
+
+          // Show/hide specific sections based on type (example for Renda Fixa)
+          document.getElementById('detail-rf-specific-fields').classList.remove('hidden');
+          document.getElementById('detail-acoes-specific-fields').classList.add('hidden');
+          document.getElementById('detail-fundos-specific-fields').classList.add('hidden');
+          document.getElementById('detail-crypto-specific-fields').classList.add('hidden');
+          // Populate RF specific fields (example)
+          document.getElementById('detail-maturity_date').textContent = '01/01/2029';
+
+
+          // Clear and populate transaction log (example static row)
+          const transactionLogBody = document.getElementById('transaction_log_body');
+          transactionLogBody.innerHTML = `
+            <tr>
+              <td class="p-2 border-b">2023-01-15</td>
+              <td class="p-2 border-b">Compra</td>
+              <td class="p-2 border-b text-right">2</td>
+              <td class="p-2 border-b text-right">R$ 13.800,00</td>
+              <td class="p-2 border-b text-right">R$ 27.600,00</td>
+              <td class="p-2 border-b text-right">R$ 0,00</td>
+              <td class="p-2 border-b text-right">R$ 27.600,00</td>
+            </tr>
+            <tr>
+              <td class="p-2 border-b">2024-03-20</td>
+              <td class="p-2 border-b">Ajuste de Preço</td>
+              <td class="p-2 border-b text-right">-</td>
+              <td class="p-2 border-b text-right">R$ 14.000,00</td>
+              <td class="p-2 border-b text-right">-</td>
+              <td class="p-2 border-b text-right">-</td>
+              <td class="p-2 border-b text-right">-</td>
+            </tr>
+          `;
+
+          investmentDetailModal.classList.remove('hidden');
+        }
+
+        detailCloseBtn?.addEventListener('click', () => investmentDetailModal.classList.add('hidden'));
+        investmentDetailModal?.addEventListener('click', (event) => {
+          if (event.target === investmentDetailModal) {
+            investmentDetailModal.classList.add('hidden');
+          }
+        });
+
+        // Example of how to trigger it from the list - this makes the sample row's button functional
+        // This should ideally be more robust for dynamically generated content.
+        const sampleViewButton = document.querySelector('#investments-table-body tr:not(#investments-table-loading) button[title="Ver Detalhes/Editar"]');
+        sampleViewButton?.addEventListener('click', (event) => {
+            // const investmentId = event.target.closest('tr').dataset.id; // Future use: event.target.closest('tr').dataset.investmentId
+            openInvestmentDetailModal('sampleInvestmentId'); // Pass a sample ID or data object
+        });
+
+        // Close modals on Escape key
+        function closeAllModals() {
+            investmentModal.classList.add('hidden');
+            investmentDetailModal.classList.add('hidden');
+            // Add any other modals here if created
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeAllModals();
+            }
+        });
+
+        // Loading indicator utility functions
+        function showLoading(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) el.classList.remove('hidden');
+        }
+        function hideLoading(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) el.classList.add('hidden');
+        }
+        // Example usage (can be called when fetching data):
+        // showLoading('db-total-patrimonio-loader');
+        // hideLoading('db-total-patrimonio-loader');
+
+    </script>
+
+    <!-- Investment Detail Modal -->
+    <div id="investment-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title-id" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+      <div class="relative top-10 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white mb-10"> <!-- Adjusted top margin -->
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center border-b pb-3 mb-4">
+          <p id="detail-modal-title-id" class="text-2xl font-bold">Detalhes do Investimento</p> <!-- Added ID for aria-labelledby -->
+          <button id="detail-modal-close-btn" class="cursor-pointer z-50" aria-label="Fechar modal de detalhes">
+            <svg class="fill-current text-black hover:text-gray-700" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 18 18"><path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path></svg>
+          </button>
+        </div>
+        <!-- Modal Content -->
+        <div id="investment-detail-content" class="text-sm">
+          <h3 class="text-lg font-semibold mb-2 text-gray-700">Informações Gerais</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+            <div><span class="font-medium text-gray-500">Nome:</span> <span id="detail-investment_name" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Ticker:</span> <span id="detail-asset_ticker_symbol" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Tipo:</span> <span id="detail-investment_type" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Subtipo:</span> <span id="detail-investment_subtype" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Instituição:</span> <span id="detail-institution" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Conta:</span> <span id="detail-account_identifier" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Moeda:</span> <span id="detail-currency" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Status:</span> <span id="detail-status" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Nível de Risco:</span> <span id="detail-risk_level" class="text-gray-800">-</span></div>
+          </div>
+          <div class="mt-2"><span class="font-medium text-gray-500">Objetivo:</span> <span id="detail-objective" class="text-gray-800">-</span></div>
+          <div class="mt-1"><span class="font-medium text-gray-500">Observações:</span> <span id="detail-notes" class="text-gray-800">-</span></div>
+
+          <h3 class="text-lg font-semibold mb-2 mt-4 pt-2 border-t text-gray-700">Valores e Quantidades</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+            <div><span class="font-medium text-gray-500">Data Aquisição Inicial:</span> <span id="detail-acquisition_date" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Quantidade Total:</span> <span id="detail-total_quantity" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Preço Médio Aquisição:</span> <span id="detail-weighted_average_acquisition_price" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Total Investido:</span> <span id="detail-total_invested_amount" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Preço Unitário Atual:</span> <span id="detail-current_unit_price" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Valor Total Atual:</span> <span id="detail-current_total_value" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Resultado (R$):</span> <span id="detail-profit_loss_absolute" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">Resultado (%):</span> <span id="detail-profit_loss_percentage" class="text-gray-800">-</span></div>
+            <div><span class="font-medium text-gray-500">% da Carteira:</span> <span id="detail-percentage_of_portfolio" class="text-gray-800">-</span></div>
+          </div>
+
+          <!-- Type-Specific Details Sections -->
+          <div id="detail-rf-specific-fields" class="pt-3 mt-3 border-t hidden">
+            <h4 class="text-md font-semibold mb-1 text-gray-600">Detalhes de Renda Fixa</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+              <div><span class="font-medium text-gray-500">Data de Vencimento:</span> <span id="detail-maturity_date" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Tipo de Rentabilidade:</span> <span id="detail-interest_rate_type" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Taxa Contratada (%):</span> <span id="detail-contracted_rate_percentage" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Indexador:</span> <span id="detail-indexer" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Tributação:</span> <span id="detail-taxation_type" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Coberto pelo FGC:</span> <span id="detail-is_fgc_covered" class="text-gray-800">-</span></div>
+            </div>
+          </div>
+
+          <div id="detail-acoes-specific-fields" class="pt-3 mt-3 border-t hidden">
+            <h4 class="text-md font-semibold mb-1 text-gray-600">Detalhes de Ações</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+              <div><span class="font-medium text-gray-500">Bolsa:</span> <span id="detail-stock_exchange" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Setor:</span> <span id="detail-sector" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">CNPJ Empresa:</span> <span id="detail-cnpj_acao" class="text-gray-800">-</span></div>
+            </div>
+          </div>
+
+          <div id="detail-fundos-specific-fields" class="pt-3 mt-3 border-t hidden">
+            <h4 class="text-md font-semibold mb-1 text-gray-600">Detalhes de Fundos/Previdência</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+              <div><span class="font-medium text-gray-500">CNPJ Fundo:</span> <span id="detail-fund_cnpj" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Taxa Adm.(%):</span> <span id="detail-administrator_fee_percentage" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Taxa Perf.(%):</span> <span id="detail-performance_fee_percentage" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Benchmark:</span> <span id="detail-benchmark" class="text-gray-800">-</span></div>
+            </div>
+          </div>
+
+          <div id="detail-crypto-specific-fields" class="pt-3 mt-3 border-t hidden">
+            <h4 class="text-md font-semibold mb-1 text-gray-600">Detalhes de Moedas Digitais</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+              <div><span class="font-medium text-gray-500">Código Ativo:</span> <span id="detail-crypto_asset_code" class="text-gray-800">-</span></div>
+              <div><span class="font-medium text-gray-500">Exchange/Carteira:</span> <span id="detail-exchange_platform_wallet" class="text-gray-800">-</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Transaction Log -->
+        <div class="mt-6">
+          <h3 class="text-xl font-semibold mb-2">Histórico de Transações</h3>
+          <div class="overflow-x-auto max-h-60"> <!-- Added max-h-60 for scrollable transaction log -->
+            <table id="transaction_log_table" class="min-w-full bg-white border">
+              <thead class="sticky top-0 bg-gray-100 z-10"> <!-- Made header sticky -->
+                <tr class="bg-gray-50">
+                  <th class="p-2 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
+                  <th class="p-2 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                  <th class="p-2 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Qtd.</th>
+                  <th class="p-2 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Preço Unit.</th>
+                  <th class="p-2 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total</th>
+                  <th class="p-2 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Taxas</th>
+                  <th class="p-2 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Líquido</th>
+                </tr>
+              </thead>
+              <tbody id="transaction_log_body" class="text-sm">
+                <!-- Sample Transaction Row (will be replaced by JS) -->
+                <tr>
+                  <td class="p-2 border-b">2023-03-20</td>
+                  <td class="p-2 border-b">Compra/Aporte</td>
+                  <td class="p-2 border-b text-right">50</td>
+                  <td class="p-2 border-b text-right">R$ 26,00</td>
+                  <td class="p-2 border-b text-right">R$ 1300,00</td>
+                  <td class="p-2 border-b text-right">R$ 4,90</td>
+                  <td class="p-2 border-b text-right">R$ 1295,10</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Modal Actions -->
+        <div class="flex justify-end pt-6 border-t mt-6">
+          <button id="detail-edit-btn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 mr-2 shadow-sm">Editar Investimento</button>
+          <button id="detail-add-transaction-btn" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 mr-2 shadow-sm">Registrar Transação</button>
+          <button id="detail-delete-btn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 shadow-sm">Excluir Investimento</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Investment Form Modal -->
+    <div id="investment-form-modal" role="dialog" aria-modal="true" aria-labelledby="form-modal-title-id" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+      <div class="relative top-10 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-md bg-white mb-10"> <!-- Adjusted top margin -->
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center pb-3 mb-4 border-b">
+          <p id="form-modal-title-id" class="text-2xl font-bold">Adicionar Novo Investimento</p> <!-- Added ID for aria-labelledby -->
+          <button id="modal-close-btn" class="modal-close cursor-pointer z-50" aria-label="Fechar modal de formulário">
+            <svg class="fill-current text-black hover:text-gray-700" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 18 18"><path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path></svg>
+          </button>
+        </div>
+        <!-- Modal Content (Form) -->
+        <form id="investment-form">
+          <input type="hidden" id="investment_id" name="investment_id"> <!-- For editing -->
+          <div id="form-message" class="mb-3 text-sm text-center"></div> <!-- Form message placeholder -->
+
+          <h3 class="text-lg font-semibold mb-3 text-gray-700">Informações Gerais</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+            <div class="mb-4">
+              <label for="investment_name" class="block text-sm font-medium text-gray-700 mb-1">Nome do Investimento <span class="text-red-500">*</span></label>
+              <input type="text" name="investment_name" id="investment_name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+            </div>
+            <div class="mb-4">
+              <label for="asset_ticker_symbol" class="block text-sm font-medium text-gray-700 mb-1">Ticker / Símbolo</label>
+              <input type="text" name="asset_ticker_symbol" id="asset_ticker_symbol" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="mb-4">
+              <label for="investment_type" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Investimento <span class="text-red-500">*</span></label>
+              <select name="investment_type" id="investment_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                <option value="">Selecione o Tipo</option>
+                <option value="Poupança">Poupança</option>
+                <option value="Tesouro Direto">Tesouro Direto</option>
+                <option value="CDB">CDB</option>
+                <option value="LCI">LCI</option>
+                <option value="LCA">LCA</option>
+                <option value="Debênture">Debênture</option>
+                <option value="Ação">Ação</option>
+                <option value="FII">FII</option>
+                <option value="ETF">ETF</option>
+                <option value="Fundo de Investimento">Fundo de Investimento</option>
+                <option value="Previdência Privada">Previdência Privada</option>
+                <option value="Moeda Digital">Moeda Digital</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label for="investment_subtype" class="block text-sm font-medium text-gray-700 mb-1">Subtipo (Opcional)</label>
+              <input type="text" name="investment_subtype" id="investment_subtype" placeholder="Ex: Tesouro Selic 2029, Apple Inc." class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="mb-4">
+              <label for="institution" class="block text-sm font-medium text-gray-700 mb-1">Instituição Financeira / Corretora <span class="text-red-500">*</span></label>
+              <input type="text" name="institution" id="institution" placeholder="Ex: XP, BTG, Binance" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+            </div>
+            <div class="mb-4">
+              <label for="account_identifier" class="block text-sm font-medium text-gray-700 mb-1">Número da Conta / Identificador (Opcional)</label>
+              <input type="text" name="account_identifier" id="account_identifier" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+             <div class="mb-4">
+              <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">Moeda <span class="text-red-500">*</span></label>
+              <select name="currency" id="currency" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                <option value="BRL">BRL (Real Brasileiro)</option>
+                <option value="USD">USD (Dólar Americano)</option>
+                <option value="EUR">EUR (Euro)</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status <span class="text-red-500">*</span></label>
+              <select name="status" id="status" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                <option value="Ativo">Ativo</option>
+                <option value="Vendido/Resgatado">Vendido/Resgatado</option>
+                <option value="Vencido">Vencido</option>
+              </select>
+            </div>
+             <div class="mb-4">
+                <label for="risk_level" class="block text-sm font-medium text-gray-700 mb-1">Nível de Risco (Opcional)</label>
+                <select name="risk_level" id="risk_level" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Selecione</option>
+                    <option value="Baixo">Baixo</option>
+                    <option value="Médio">Médio</option>
+                    <option value="Alto">Alto</option>
+                </select>
+            </div>
+            <div class="mb-4 md:col-span-2">
+                <label for="objective" class="block text-sm font-medium text-gray-700 mb-1">Objetivo / Estratégia (Opcional)</label>
+                <textarea name="objective" id="objective" rows="2" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
+            <div class="mb-4 md:col-span-2">
+                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Observações (Opcional)</label>
+                <textarea name="notes" id="notes" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            </div>
+          </div>
+
+          <h3 class="text-lg font-semibold mb-3 mt-4 pt-4 border-t text-gray-700">Detalhes da Quantidade e Valor (Inicial)</h3>
+          <p class="text-xs text-gray-500 mb-3">Para o primeiro registro do investimento. Transações subsequentes (compras, vendas, proventos) são adicionadas separadamente.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+            <div class="mb-4">
+              <label for="initial_acquisition_date" class="block text-sm font-medium text-gray-700 mb-1">Data da Aquisição Inicial <span class="text-red-500">*</span></label>
+              <input type="date" name="initial_acquisition_date" id="initial_acquisition_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+            </div>
+            <div class="mb-4">
+              <label for="initial_quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantidade Inicial <span class="text-red-500">*</span></label>
+              <input type="number" step="any" name="initial_quantity" id="initial_quantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+            </div>
+            <div class="mb-4">
+              <label for="initial_acquisition_price" class="block text-sm font-medium text-gray-700 mb-1">Preço de Aquisição Unitário Inicial <span class="text-red-500">*</span></label>
+              <input type="number" step="any" name="initial_acquisition_price" id="initial_acquisition_price" placeholder="Preço por unidade/cota" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+            </div>
+            <div class="mb-4">
+              <label for="initial_fees_paid" class="block text-sm font-medium text-gray-700 mb-1">Taxas Pagas na Aquisição Inicial (Opcional)</label>
+              <input type="number" step="any" name="initial_fees_paid" id="initial_fees_paid" placeholder="Total de taxas" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+          </div>
+
+          <!-- Detalhes Específicos do Tipo (Dynamically Shown) -->
+          <div id="type-specific-fields-container" class="mt-4 pt-4 border-t">
+            <h3 class="text-lg font-semibold mb-1 text-gray-700">Detalhes Específicos do Tipo</h3>
+            <p class="text-xs text-gray-500 mb-3">Campos adicionais baseados no tipo de investimento selecionado.</p>
+
+            <div id="rf-specific-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <h4 class="md:col-span-2 text-md font-medium mb-2 text-gray-600">Renda Fixa / Poupança</h4>
+              <div class="mb-4">
+                <label for="maturity_date" class="block text-sm font-medium text-gray-700 mb-1">Data de Vencimento (Opcional)</label>
+                <input type="date" name="maturity_date" id="maturity_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+              <div class="mb-4">
+                <label for="interest_rate_type" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Rentabilidade (Opcional)</label>
+                <select name="interest_rate_type" id="interest_rate_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Selecione</option>
+                    <option value="Pré-fixado">Pré-fixado</option>
+                    <option value="Pós-fixado Indexador">Pós-fixado (Indexador)</option>
+                    <option value="Pós-fixado Indexador + Spread">Pós-fixado (Indexador + Spread)</option>
+                    <option value="Híbrido">Híbrido (Inflação + Taxa)</option>
+                </select>
+              </div>
+              <div class="mb-4">
+                <label for="contracted_rate_percentage" class="block text-sm font-medium text-gray-700 mb-1">Taxa Contratada (%) (Opcional)</label>
+                <input type="number" step="any" name="contracted_rate_percentage" id="contracted_rate_percentage" placeholder="Ex: 10.5 para 10.5%" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+               <div class="mb-4">
+                <label for="indexer" class="block text-sm font-medium text-gray-700 mb-1">Indexador (Opcional)</label>
+                <input type="text" name="indexer" id="indexer" placeholder="Ex: CDI, IPCA, Selic" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+              <div class="mb-4">
+                <label for="taxation_type" class="block text-sm font-medium text-gray-700 mb-1">Tributação (Opcional)</label>
+                <select name="taxation_type" id="taxation_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Selecione</option>
+                    <option value="Regressiva">IR Regressivo</option>
+                    <option value="Isento">Isento de IR</option>
+                    <option value="Outra">Outra</option>
+                </select>
+              </div>
+              <div class="mb-4 flex items-center">
+                <input type="checkbox" name="is_fgc_covered" id="is_fgc_covered" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <label for="is_fgc_covered" class="ml-2 block text-sm text-gray-900">Coberto pelo FGC? (Opcional)</label>
+              </div>
+            </div>
+
+            <div id="acoes-specific-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <h4 class="md:col-span-2 text-md font-medium mb-2 text-gray-600">Ações</h4>
+              <div class="mb-4">
+                <label for="stock_exchange" class="block text-sm font-medium text-gray-700 mb-1">Bolsa de Valores (Opcional)</label>
+                <input type="text" name="stock_exchange" id="stock_exchange" placeholder="Ex: B3, NASDAQ" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+              <div class="mb-4">
+                <label for="sector" class="block text-sm font-medium text-gray-700 mb-1">Setor (Opcional)</label>
+                <input type="text" name="sector" id="sector" placeholder="Ex: Tecnologia, Varejo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+              <div class="mb-4">
+                <label for="cnpj_acao" class="block text-sm font-medium text-gray-700 mb-1">CNPJ da Empresa (Opcional)</label>
+                <input type="text" name="cnpj_acao" id="cnpj_acao" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+            </div>
+
+            <div id="fundos-specific-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <h4 class="md:col-span-2 text-md font-medium mb-2 text-gray-600">Fundos (FII, ETF, FI) / Previdência</h4>
+              <div class="mb-4">
+                <label for="fund_cnpj" class="block text-sm font-medium text-gray-700 mb-1">CNPJ do Fundo (Opcional)</label>
+                <input type="text" name="fund_cnpj" id="fund_cnpj" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+              <div class="mb-4">
+                <label for="administrator_fee_percentage" class="block text-sm font-medium text-gray-700 mb-1">Taxa de Administração (%) (Opcional)</label>
+                <input type="number" step="any" name="administrator_fee_percentage" id="administrator_fee_percentage" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+              <div class="mb-4">
+                <label for="performance_fee_percentage" class="block text-sm font-medium text-gray-700 mb-1">Taxa de Performance (%) (Opcional)</label>
+                <input type="text" name="performance_fee_percentage" id="performance_fee_percentage" placeholder="Ex: 20% sobre o que exceder o CDI" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+              <div class="mb-4">
+                <label for="benchmark" class="block text-sm font-medium text-gray-700 mb-1">Benchmark (Opcional)</label>
+                <input type="text" name="benchmark" id="benchmark" placeholder="Ex: IBOVESPA, CDI" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              </div>
+            </div>
+
+            <div id="crypto-specific-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                <h4 class="md:col-span-2 text-md font-medium mb-2 text-gray-600">Moedas Digitais</h4>
+                <div class="mb-4">
+                    <label for="crypto_asset_code" class="block text-sm font-medium text-gray-700 mb-1">Código do Ativo Digital (Opcional)</label>
+                    <input type="text" name="crypto_asset_code" id="crypto_asset_code" placeholder="Ex: BTC, ETH, ADA" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="exchange_platform_wallet" class="block text-sm font-medium text-gray-700 mb-1">Exchange / Plataforma / Carteira (Opcional)</label>
+                    <input type="text" name="exchange_platform_wallet" id="exchange_platform_wallet" placeholder="Ex: Binance, Ledger Nano S" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="flex justify-end pt-6 mt-6 border-t">
+            <button type="button" id="modal-cancel-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 mr-3 shadow-sm">Cancelar</button>
+            <button type="submit" id="modal-save-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow-sm">Salvar Investimento</button>
+          </div>
+        </form>
+      </div>
+    </div>
+</body>
+</html>

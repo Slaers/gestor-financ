@@ -57,5 +57,53 @@ service cloud.firestore {
         }
       }
     }
+
+    // New rules for root-level investments collection
+    match /investments/{investmentId} {
+      allow read, delete: if request.auth.uid == resource.data.user_id;
+
+      allow create: if request.auth.uid != null
+                    && request.resource.data.user_id == request.auth.uid
+                    && request.resource.data.investment_name is string && request.resource.data.investment_name != ''
+                    && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Ação', 'FII', 'ETF', 'Renda Fixa', 'Criptomoeda', 'Outros']
+                    && request.resource.data.institution is string && request.resource.data.institution != ''
+                    && request.resource.data.acquisition_date is timestamp
+                    && request.resource.data.total_quantity is number && request.resource.data.total_quantity >= 0
+                    && request.resource.data.current_unit_price is number && request.resource.data.current_unit_price >= 0
+                    && request.resource.data.currency is string && request.resource.data.currency in ['BRL', 'USD', 'EUR']
+                    && request.resource.data.status is string && request.resource.data.status in ['Ativo', 'Vendido/Resgatado', 'Vencido'];
+
+      allow update: if request.auth.uid == resource.data.user_id
+                    && request.resource.data.user_id == resource.data.user_id // User ID cannot be changed
+                    && request.resource.data.investment_name is string && request.resource.data.investment_name != ''
+                    && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Ação', 'FII', 'ETF', 'Renda Fixa', 'Criptomoeda', 'Outros']
+                    && request.resource.data.institution is string && request.resource.data.institution != ''
+                    && request.resource.data.acquisition_date is timestamp
+                    && request.resource.data.total_quantity is number && request.resource.data.total_quantity >= 0
+                    && request.resource.data.current_unit_price is number && request.resource.data.current_unit_price >= 0
+                    && request.resource.data.currency is string && request.resource.data.currency in ['BRL', 'USD', 'EUR']
+                    && request.resource.data.status is string && request.resource.data.status in ['Ativo', 'Vendido/Resgatado', 'Vencido'];
+    }
+
+    // New rules for root-level transactions collection
+    match /transactions/{transactionId} {
+      allow read, delete: if request.auth.uid == resource.data.user_id;
+
+      allow create: if request.auth.uid != null
+                    && request.resource.data.user_id == request.auth.uid
+                    && request.resource.data.investment_id_fk is string && request.resource.data.investment_id_fk != ''
+                    && request.resource.data.transaction_type is string && request.resource.data.transaction_type in ['Compra', 'Venda', 'Provento', 'Outros']
+                    && request.resource.data.transaction_date is timestamp
+                    && request.resource.data.quantity_transacted is number
+                    && request.resource.data.price_per_unit_transacted is number && request.resource.data.price_per_unit_transacted >= 0;
+
+      allow update: if request.auth.uid == resource.data.user_id
+                    && request.resource.data.user_id == resource.data.user_id // User ID cannot be changed
+                    && request.resource.data.investment_id_fk == resource.data.investment_id_fk // FK should not change
+                    && request.resource.data.transaction_type is string && request.resource.data.transaction_type in ['Compra', 'Venda', 'Provento', 'Outros']
+                    && request.resource.data.transaction_date is timestamp
+                    && request.resource.data.quantity_transacted is number
+                    && request.resource.data.price_per_unit_transacted is number && request.resource.data.price_per_unit_transacted >= 0;
+    }
   }
 }
