@@ -158,10 +158,11 @@
     <script src="js/investment-logic.js"></script>
     <script src="js/household-investment-manager.js"></script>
     <script>
-        // --- Household ID Logic ---
-        let currentHouseholdId = null;
+        window.addEventListener('DOMContentLoaded', () => {
+            // --- Household ID Logic ---
+            let currentHouseholdId = null;
 
-        function getHouseholdIdFromUrl() {
+            function getHouseholdIdFromUrl() {
           const params = new URLSearchParams(window.location.search);
           return params.get('householdId');
         }
@@ -757,7 +758,6 @@
             });
           }
         });
-
     </script>
 
     <!-- Investment Detail Modal -->

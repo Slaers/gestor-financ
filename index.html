@@ -779,10 +779,6 @@
 
             function renderCharts(income, expense, expensesByCategory, incomesByCategory) {
                  destroyCharts(); // This will now also clear charts.incomesByCategoryChart if it exists
-                const categoryNames = Object.keys(expensesByCategory);
-                const categoryValues = Object.values(expensesByCategory);
-                const expensesChartEl = document.getElementById('expenses-by-category-chart');
-                const incomeVsExpenseChartEl = document.getElementById('income-vs-expense-chart');
 
                 const isDarkMode = document.documentElement.classList.contains('dark');
                 const chartLabelColor = isDarkMode ? '#cbd5e1' : '#334155'; 
@@ -792,14 +788,80 @@
                 const tooltipBodyColor = isDarkMode ? '#e2e8f0' : '#334155';
                 const tooltipBorderColor = isDarkMode ? '#475569' : '#e2e8f0';
 
-
+                // Expenses by Category Chart
+                const categoryNames = Object.keys(expensesByCategory);
+                const categoryValues = Object.values(expensesByCategory);
+                const expensesChartEl = document.getElementById('expenses-by-category-chart');
                 if (expensesChartEl) {
                     const ctxCategory = expensesChartEl.getContext('2d');
                     charts.categoryChart = new Chart(ctxCategory, {type: 'doughnut', data: {labels: categoryNames.length > 0 ? categoryNames : ['Nenhuma despesa'], datasets: [{data: categoryValues.length > 0 ? categoryValues : [1], backgroundColor: categoryValues.length > 0 ? ['#0ea5e9', '#14b8a6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#8b5cf6'] : ['#e2e8f0'], borderColor: isDarkMode ? '#1e293b' : '#f8fafc', borderWidth: 3 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: { position: 'bottom', labels: { color: chartLabelColor, boxWidth: 12, padding: 15, font: { size: 10 } } }, tooltip: { backgroundColor: tooltipBgColor, titleColor: tooltipTitleColor, bodyColor: tooltipBodyColor, borderColor: tooltipBorderColor, borderWidth: 1, callbacks: {label: function(context) {let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) {label += formatCurrency(context.parsed);} return label;}}}}}});
                 }
+
+                // Income vs Expense Chart
+                const incomeVsExpenseChartEl = document.getElementById('income-vs-expense-chart');
                 if (incomeVsExpenseChartEl) {
                     const ctxIncomeVsExpense = incomeVsExpenseChartEl.getContext('2d');
                     charts.incomeVsExpenseChart = new Chart(ctxIncomeVsExpense, {type: 'bar', data: {labels: ['Fluxo de Caixa'], datasets: [{ label: 'Receitas', data: [income], backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: 'rgba(5, 150, 105, 1)', borderWidth:1, borderRadius: 4 },{ label: 'Despesas', data: [expense], backgroundColor: 'rgba(244, 63, 94, 0.7)', borderColor: 'rgba(225, 29, 72, 1)', borderWidth:1, borderRadius: 4 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: chartLabelColor} }, tooltip: { backgroundColor: tooltipBgColor, titleColor: tooltipTitleColor, bodyColor: tooltipBodyColor, borderColor: tooltipBorderColor, borderWidth: 1} }, scales: { y: { beginAtZero: true, ticks: { color: chartLabelColor, callback: (value) => formatCurrency(value) }, grid: { color: gridColor} }, x: { ticks: {color: chartLabelColor}, grid: { display: false, color: gridColor} }  }}});
+                }
+
+                // Incomes by Category Chart
+                console.log('Renderizando gráfico de Receitas (renderCharts). Dados recebidos (incomesByCategory):', incomesByCategory);
+                const incomeCategoryNames = Object.keys(incomesByCategory || {});
+                const incomeCategoryValues = Object.values(incomesByCategory || {});
+                console.log('Nomes das categorias de receita (renderCharts):', incomeCategoryNames);
+                console.log('Valores das categorias de receita (renderCharts):', incomeCategoryValues);
+
+                const incomesChartEl = document.getElementById('incomes-by-category-chart');
+                console.log('Elemento canvas para receitas (renderCharts):', incomesChartEl);
+                if (incomesChartEl) {
+                    const ctxIncomeCategory = incomesChartEl.getContext('2d');
+                    console.log('Contexto 2D para gráfico de receitas (renderCharts):', ctxIncomeCategory);
+                    charts.incomesByCategoryChart = new Chart(ctxIncomeCategory, {
+                        type: 'doughnut',
+                        data: {
+                            labels: incomeCategoryNames.length > 0 ? incomeCategoryNames : ['Nenhuma receita'],
+                            datasets: [{
+                                data: incomeCategoryValues.length > 0 ? incomeCategoryValues : [1],
+                                backgroundColor: incomeCategoryValues.length > 0 ? ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#059669', '#047857', '#065f46', '#064e3b', '#022c22'] : ['#e2e8f0'],
+                                borderColor: isDarkMode ? '#1e293b' : '#f8fafc',
+                                borderWidth: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: chartLabelColor,
+                                        boxWidth: 12,
+                                        padding: 15,
+                                        font: { size: 10 }
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: tooltipBgColor,
+                                    titleColor: tooltipTitleColor,
+                                    bodyColor: tooltipBodyColor,
+                                    borderColor: tooltipBorderColor,
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) { label += ': '; }
+                                            if (context.parsed !== null) {
+                                                label += formatCurrency(context.parsed);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    console.error('Canvas com ID "incomes-by-category-chart" NÃO encontrado!');
                 }
             };
 
@@ -810,21 +872,24 @@
                     if(totalIncomeEl) totalIncomeEl.textContent = formatCurrency(0);
                     if(totalExpenseEl) totalExpenseEl.textContent = formatCurrency(0);
                     if(balanceEl) balanceEl.textContent = formatCurrency(0);
-                    renderTable([]);renderCharts(0, 0, {}); return;
+                    renderTable([]);renderCharts(0, 0, {}, {}); return; // Pass empty object for incomesByCategory
                 }
                 const filteredTransactions = transactions.filter(t => t.date && t.date.startsWith(selectedMonthYear));
                 console.log(`Total de transações (todas): ${transactions.length}, Transações filtradas para ${selectedMonthYear}: ${filteredTransactions.length}`);
+
+                console.log('Transações filtradas para o mês (updateDashboard):', filteredTransactions);
+
                 let totalIncome = 0; let totalExpense = 0; const expensesByCategory = {};
                 const incomesByCategory = {};
                 filteredTransactions.forEach(t => {
                     if (t.type === 'Receita') {
-                        totalIncome += t.amount; // Already calculated, but harmless to repeat if logic is self-contained
+                        totalIncome += t.amount;
                         if (incomesByCategory[t.category]) {
                             incomesByCategory[t.category] += t.amount;
                         } else {
                             incomesByCategory[t.category] = t.amount;
                         }
-                    } else {
+                    } else { // Despesa
                         totalExpense += t.amount;
                         if(expensesByCategory[t.category]){
                             expensesByCategory[t.category] += t.amount;
@@ -833,6 +898,9 @@
                         }
                     }
                 });
+
+                console.log('Dados calculados para gráfico de Receitas por Categoria (updateDashboard):', incomesByCategory);
+
                 const balance = totalIncome - totalExpense;
                 if(totalIncomeEl) totalIncomeEl.textContent = formatCurrency(totalIncome);
                 if(totalExpenseEl) totalExpenseEl.textContent = formatCurrency(totalExpense);
