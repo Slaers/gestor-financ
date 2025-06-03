@@ -1359,26 +1359,40 @@
             const hamburgerButton = document.getElementById('hamburger-button');
             const mobileMenu = document.getElementById('mobile-menu');
             const closeMobileMenuButton = document.getElementById('close-mobile-menu-button');
-            const mobileMenuFamilyLink = document.getElementById('mobile-menu-family-link'); // Get the family link
+            const mobileMenuFamilyLink = document.getElementById('mobile-menu-family-link');
+            const desktopMenu = document.getElementById('desktop-menu');
+            const desktopMenuFamilyLink = document.getElementById('desktop-menu-family-link');
+            // manageFamilyBtn is already defined globally, so no need to re-declare if in the same scope.
+            // Make sure manageFamilyBtn is accessible here. It's defined earlier in the DOMContentLoaded.
 
-            function toggleMenu() {
-                mobileMenu.classList.toggle('hidden');
-                mobileMenu.classList.toggle('flex'); // Use flex for display when not hidden
-                if (!mobileMenu.classList.contains('hidden')) {
-                    // If menu is being opened
-                    mobileMenu.classList.remove('translate-x-full');
-                    mobileMenu.classList.add('translate-x-0');
-                } else {
-                    // If menu is being closed
-                    mobileMenu.classList.add('translate-x-full');
-                    mobileMenu.classList.remove('translate-x-0');
+            function toggleMenu() { // This function is for the MOBILE slide-in menu
+                if (mobileMenu) {
+                    mobileMenu.classList.toggle('hidden');
+                    mobileMenu.classList.toggle('flex'); // Use flex for display when not hidden
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        // If menu is being opened
+                        mobileMenu.classList.remove('translate-x-full');
+                        mobileMenu.classList.add('translate-x-0');
+                    } else {
+                        // If menu is being closed
+                        mobileMenu.classList.add('translate-x-full');
+                        mobileMenu.classList.remove('translate-x-0');
+                    }
                 }
             }
 
-            if (hamburgerButton && mobileMenu) {
+            if (hamburgerButton) {
                 hamburgerButton.addEventListener('click', (event) => {
-                    event.stopPropagation(); // Prevent click from bubbling up
-                    toggleMenu();
+                    event.stopPropagation();
+                    if (window.matchMedia('(min-width: 1024px)').matches) {
+                        // Desktop view: toggle desktop-menu
+                        if (desktopMenu) {
+                            desktopMenu.classList.toggle('hidden');
+                        }
+                    } else {
+                        // Mobile view: toggle mobile-menu (the existing toggleMenu function)
+                        toggleMenu();
+                    }
                 });
             }
 
@@ -1389,25 +1403,36 @@
                 });
             }
 
-            // Optional: Close menu when clicking outside of it
-            // document.addEventListener('click', (event) => {
-            //     if (mobileMenu && !mobileMenu.classList.contains('hidden') && !mobileMenu.contains(event.target) && !hamburgerButton.contains(event.target)) {
-            //         toggleMenu();
-            //     }
-            // });
-
-            // Handle click on "Família" link in mobile menu
-            if (mobileMenuFamilyLink && manageFamilyBtn) { // manageFamilyBtn is the original desktop family button
+            // Handle click on "Família" link in MOBILE menu
+            if (mobileMenuFamilyLink && manageFamilyBtn) {
                 mobileMenuFamilyLink.addEventListener('click', (event) => {
-                    event.preventDefault(); // Prevent default anchor behavior
-                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) { // Check if mobileMenu exists
-                        toggleMenu(); // Close the mobile menu
+                    event.preventDefault();
+                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                        toggleMenu();
                     }
-                    // Trigger a click on the original manage family button to show the household section
-                    // This reuses the existing logic for showing that section.
                     manageFamilyBtn.click();
                 });
             }
+
+            // Handle click on "Família" link in DESKTOP menu
+            if (desktopMenuFamilyLink && manageFamilyBtn) {
+                desktopMenuFamilyLink.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    if (desktopMenu && !desktopMenu.classList.contains('hidden')) {
+                        desktopMenu.classList.add('hidden');
+                    }
+                    manageFamilyBtn.click();
+                });
+            }
+
+            // Close DESKTOP dropdown when clicking outside
+            document.addEventListener('click', (event) => {
+                if (desktopMenu && !desktopMenu.classList.contains('hidden')) {
+                    if (hamburgerButton && !hamburgerButton.contains(event.target) && !desktopMenu.contains(event.target)) {
+                        desktopMenu.classList.add('hidden');
+                    }
+                }
+            });
             // End Hamburger Menu Logic
 
             // Investment Screen and Modals Logic
