@@ -135,16 +135,19 @@
             </div>
             <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:flex-wrap items-center justify-center lg:justify-end gap-2 sm:gap-3 w-full lg:w-auto">
                 <div id="user-info" class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 hidden order-first lg:order-none w-full lg:w-auto text-center lg:text-right mb-2 sm:mb-0 lg:mr-2"></div>
-                <select id="month-filter" class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 p-2.5 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none w-full xs:w-auto sm:flex-grow lg:flex-grow-0">
+                <select id="month-filter" class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 py-2 px-3 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none w-full sm:w-auto sm:flex-shrink-0">
                 </select>
-                <button id="add-transaction-btn" class="bg-sky-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 w-full xs:w-auto sm:flex-grow lg:flex-grow-0">
+                <button id="add-transaction-btn" class="bg-sky-600 text-white font-semibold py-2 px-3 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm w-full sm:w-auto sm:flex-shrink-0">
                     <span class="text-lg">+</span>
                     <span>Adicionar</span>
                 </button>
-                <button id="manage-family-btn" class="bg-teal-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-teal-600 dark:hover:bg-teal-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 w-full xs:w-auto sm:flex-grow lg:flex-grow-0">
+                <button id="investments-btn" class="bg-emerald-500 text-white font-semibold py-2 px-3 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm w-full sm:w-auto sm:flex-shrink-0">
+                    <span>💹</span> <span>Investimentos</span>
+                </button>
+                <button id="manage-family-btn" class="bg-teal-500 text-white font-semibold py-2 px-3 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-teal-600 dark:hover:bg-teal-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm w-full sm:w-auto sm:flex-shrink-0">
                      <span>&#128106;</span> <span>Família</span>
                 </button>
-                <button id="logout-btn" class="bg-rose-500 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-rose-600 dark:hover:bg-rose-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 w-full xs:w-auto sm:flex-grow lg:flex-grow-0">
+                <button id="logout-btn" class="bg-rose-500 text-white font-semibold py-2 px-3 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-rose-600 dark:hover:bg-rose-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm w-full sm:w-auto sm:flex-shrink-0">
                     <span>Sair</span>
                     <span class="text-xl">&#x23CF;</span> 
                 </button>
@@ -182,6 +185,95 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <div id="investments-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 p-4 hidden">
+        <div class="w-full max-w-4xl bg-white dark:bg-slate-700/80 backdrop-blur-sm p-6 sm:p-8 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Meus Investimentos</h2>
+                <button id="back-to-app-from-investments-btn" class="text-sm bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.03]">Voltar ao Painel</button>
+            </div>
+            <div class="mb-6">
+                <button id="add-investment-account-btn" class="bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-sky-700 dark:hover:bg-sky-500 transition-colors">
+                    + Adicionar Conta de Investimento
+                </button>
+            </div>
+            <div id="investment-accounts-list">
+                <p class="text-slate-500 dark:text-slate-400">Nenhuma conta de investimento adicionada ainda.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-investment-account-modal" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div id="add-investment-account-modal-content" class="bg-white dark:bg-slate-700 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40 w-full max-w-md p-6 sm:p-8 transform transition-all scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="add-investment-account-modal-title" class="text-2xl font-bold text-slate-900 dark:text-slate-100">Nova Conta de Investimento</h2>
+                <button id="close-add-investment-account-modal-btn" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 text-3xl leading-none transition-colors duration-150 ease-in-out">&times;</button>
+            </div>
+            <form id="add-investment-account-form">
+                <div class="mb-4">
+                    <label for="investment-account-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome da Conta</label>
+                    <input type="text" id="investment-account-name" name="name" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                </div>
+                <div class="mb-4">
+                    <label for="investment-account-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Investimento</label>
+                    <select id="investment-account-type" name="type" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                        <option value="fgts">FGTS</option>
+                        <option value="poupanca">Poupança</option>
+                        <option value="cdb">CDB/Renda Fixa</option>
+                        <option value="acoes">Ações/Renda Variável</option>
+                        <option value="fii">Fundos Imobiliários</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="investment-account-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição (Opcional)</label>
+                    <textarea id="investment-account-description" name="description" rows="3" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors"></textarea>
+                </div>
+                <div class="mb-6">
+                    <label for="investment-account-initial-amount" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Aporte Inicial (R$) (Opcional)</label>
+                    <input type="number" step="0.01" id="investment-account-initial-amount" name="initialAmount" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors">
+                </div>
+                <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Salvar Conta de Investimento</button>
+                <p id="add-investment-account-error" class="text-rose-500 dark:text-rose-400 text-sm text-center h-4 mt-2"></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-investment-entry-modal" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div id="add-investment-entry-modal-content" class="bg-white dark:bg-slate-700 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40 w-full max-w-md p-6 sm:p-8 transform transition-all scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="add-investment-entry-modal-title" class="text-2xl font-bold text-slate-900 dark:text-slate-100">Adicionar Movimentação</h2>
+                <button id="close-add-investment-entry-modal-btn" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 text-3xl leading-none transition-colors duration-150 ease-in-out">&times;</button>
+            </div>
+            <form id="add-investment-entry-form">
+                <input type="hidden" id="investment-entry-accountId" name="investmentAccountId">
+                <div class="mb-4">
+                    <label for="investment-entry-date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data</label>
+                    <input type="date" id="investment-entry-date" name="date" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                </div>
+                <div class="mb-4">
+                    <label for="investment-entry-amount" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor (R$)</label>
+                    <input type="number" step="0.01" id="investment-entry-amount" name="amount" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                </div>
+                <div class="mb-4">
+                    <label for="investment-entry-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Movimentação</label>
+                    <select id="investment-entry-type" name="entryType" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                        <option value="aporte_mensal">Aporte Mensal</option>
+                        <option value="aporte_inicial">Aporte Inicial</option>
+                        <option value="deposito_fgts">Depósito FGTS</option>
+                        <option value="rendimento">Rendimento</option>
+                        <option value="resgate">Resgate</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label for="investment-entry-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição (Opcional)</label>
+                    <textarea id="investment-entry-description" name="description" rows="3" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Salvar Movimentação</button>
+                <p id="add-investment-entry-error" class="text-rose-500 dark:text-rose-400 text-sm text-center h-4 mt-2"></p>
+            </form>
+        </div>
     </div>
 
     <div id="modal" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
@@ -247,6 +339,7 @@
             let householdData = null; 
             
             let transactionsCollectionRef = null; 
+            let investmentsCollectionRef = null; // Placeholder for investments
             let unsubscribeFirestore = null; 
 
             const authSection = document.getElementById('auth-section');
@@ -254,6 +347,37 @@
             const createHouseholdSection = document.getElementById('create-household-section'); 
             const manageHouseholdSection = document.getElementById('manage-household-section'); 
             const appContentSection = document.getElementById('app-content');
+            const investmentsSection = document.getElementById('investments-section');
+
+            // Investment UI Elements
+            const investmentsBtn = document.getElementById('investments-btn');
+            const backToAppFromInvestmentsBtn = document.getElementById('back-to-app-from-investments-btn');
+            const addInvestmentAccountBtn = document.getElementById('add-investment-account-btn');
+            const investmentAccountsListDiv = document.getElementById('investment-accounts-list');
+
+            // Add Investment Account Modal Elements
+            const addInvestmentAccountModal = document.getElementById('add-investment-account-modal');
+            const addInvestmentAccountModalContent = document.getElementById('add-investment-account-modal-content');
+            const closeAddInvestmentAccountModalBtn = document.getElementById('close-add-investment-account-modal-btn');
+            const addInvestmentAccountForm = document.getElementById('add-investment-account-form');
+            const investmentAccountNameInput = document.getElementById('investment-account-name');
+            const investmentAccountTypeSelect = document.getElementById('investment-account-type');
+            const investmentAccountDescriptionTextarea = document.getElementById('investment-account-description');
+            const investmentAccountInitialAmountInput = document.getElementById('investment-account-initial-amount');
+            const addInvestmentAccountErrorEl = document.getElementById('add-investment-account-error');
+
+            // Add Investment Entry Modal Elements
+            const addInvestmentEntryModal = document.getElementById('add-investment-entry-modal');
+            const addInvestmentEntryModalContent = document.getElementById('add-investment-entry-modal-content');
+            const closeAddInvestmentEntryModalBtn = document.getElementById('close-add-investment-entry-modal-btn');
+            const addInvestmentEntryForm = document.getElementById('add-investment-entry-form');
+            const addInvestmentEntryModalTitle = document.getElementById('add-investment-entry-modal-title');
+            const investmentEntryAccountIdInput = document.getElementById('investment-entry-accountId');
+            const investmentEntryDateInput = document.getElementById('investment-entry-date');
+            const investmentEntryAmountInput = document.getElementById('investment-entry-amount');
+            const investmentEntryTypeSelect = document.getElementById('investment-entry-type');
+            const investmentEntryDescriptionTextarea = document.getElementById('investment-entry-description');
+            const addInvestmentEntryErrorEl = document.getElementById('add-investment-entry-error');
 
             const householdNameInput = document.getElementById('household-name'); 
             const createHouseholdBtn = document.getElementById('create-household-btn'); 
@@ -329,11 +453,13 @@
                 if(authSection) authSection.classList.add('hidden');
                 if(householdSection) householdSection.classList.add('hidden');
                 if(appContentSection) appContentSection.classList.add('hidden');
+                if(investmentsSection) investmentsSection.classList.add('hidden');
                 if(loadingOverlay) loadingOverlay.classList.add('hidden'); 
 
                 if (screenName === 'auth' && authSection) authSection.classList.remove('hidden');
                 else if (screenName === 'household' && householdSection) householdSection.classList.remove('hidden');
                 else if (screenName === 'app' && appContentSection) appContentSection.classList.remove('hidden');
+                else if (screenName === 'investments' && investmentsSection) investmentsSection.classList.remove('hidden');
                 else if (screenName === 'loading' && loadingOverlay) loadingOverlay.classList.remove('hidden');
             }
             
@@ -895,6 +1021,79 @@
             if(manageFamilyBtn) manageFamilyBtn.addEventListener('click', () => { showScreen('household'); populateManageHouseholdUI(); });
             if(backToAppBtn) backToAppBtn.addEventListener('click', () => { showScreen('app'); });
 
+            // Investment Screen and Modals Logic
+            function openAddInvestmentAccountModal() {
+                if(addInvestmentAccountForm) addInvestmentAccountForm.reset();
+                if(addInvestmentAccountErrorEl) addInvestmentAccountErrorEl.textContent = '';
+                if(addInvestmentAccountModal) {
+                    addInvestmentAccountModal.classList.remove('hidden');
+                    addInvestmentAccountModal.classList.add('flex');
+                }
+                if(addInvestmentAccountModalContent) {
+                    setTimeout(() => {
+                        addInvestmentAccountModalContent.classList.remove('scale-95', 'opacity-0');
+                        addInvestmentAccountModalContent.classList.add('scale-100', 'opacity-100');
+                    }, 10);
+                }
+            }
+
+            function closeAddInvestmentAccountModal() {
+                if(addInvestmentAccountModalContent) {
+                    addInvestmentAccountModalContent.classList.add('scale-95', 'opacity-0');
+                    addInvestmentAccountModalContent.classList.remove('scale-100', 'opacity-100');
+                }
+                if(addInvestmentAccountModal) {
+                    setTimeout(() => {
+                        addInvestmentAccountModal.classList.add('hidden');
+                        addInvestmentAccountModal.classList.remove('flex');
+                    }, 200);
+                }
+            }
+
+            function openAddInvestmentEntryModal(accountId, accountName) {
+                if(addInvestmentEntryForm) addInvestmentEntryForm.reset();
+                if(addInvestmentEntryErrorEl) addInvestmentEntryErrorEl.textContent = '';
+                if(addInvestmentEntryModalTitle && accountName) addInvestmentEntryModalTitle.textContent = `Adicionar Movimentação em ${accountName}`;
+                else if(addInvestmentEntryModalTitle) addInvestmentEntryModalTitle.textContent = 'Adicionar Movimentação';
+                if(investmentEntryAccountIdInput && accountId) investmentEntryAccountIdInput.value = accountId;
+                
+                if(addInvestmentEntryModal) {
+                    addInvestmentEntryModal.classList.remove('hidden');
+                    addInvestmentEntryModal.classList.add('flex');
+                }
+                if(addInvestmentEntryModalContent) {
+                    setTimeout(() => {
+                        addInvestmentEntryModalContent.classList.remove('scale-95', 'opacity-0');
+                        addInvestmentEntryModalContent.classList.add('scale-100', 'opacity-100');
+                    }, 10);
+                }
+            }
+
+            function closeAddInvestmentEntryModal() {
+                if(addInvestmentEntryModalContent) {
+                    addInvestmentEntryModalContent.classList.add('scale-95', 'opacity-0');
+                    addInvestmentEntryModalContent.classList.remove('scale-100', 'opacity-100');
+                }
+                if(addInvestmentEntryModal) {
+                    setTimeout(() => {
+                        addInvestmentEntryModal.classList.add('hidden');
+                        addInvestmentEntryModal.classList.remove('flex');
+                    }, 200);
+                }
+            }
+
+            // Event Listeners for Investments
+            if(investmentsBtn) investmentsBtn.addEventListener('click', () => showScreen('investments'));
+            if(backToAppFromInvestmentsBtn) backToAppFromInvestmentsBtn.addEventListener('click', () => showScreen('app'));
+            if(addInvestmentAccountBtn) addInvestmentAccountBtn.addEventListener('click', openAddInvestmentAccountModal);
+            if(closeAddInvestmentAccountModalBtn) closeAddInvestmentAccountModalBtn.addEventListener('click', closeAddInvestmentAccountModal);
+            if(addInvestmentAccountModal) addInvestmentAccountModal.addEventListener('click', (e) => {
+                if (e.target === addInvestmentAccountModal) closeAddInvestmentAccountModal();
+            });
+            if(closeAddInvestmentEntryModalBtn) closeAddInvestmentEntryModalBtn.addEventListener('click', closeAddInvestmentEntryModal);
+            if(addInvestmentEntryModal) addInvestmentEntryModal.addEventListener('click', (e) => {
+                if (e.target === addInvestmentEntryModal) closeAddInvestmentEntryModal();
+            });
 
             onAuthStateChanged(authInstance, async (user) => {
                 console.log("onAuthStateChanged disparado. User:", user ? user.uid : 'null');
