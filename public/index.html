@@ -37,6 +37,17 @@
         body { border-top: 16px solid #ffa100; }
       }
     </style>
+    <style>
+      /* CSS for page fade-out animation */
+      @keyframes fadeOutPage {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      body.fade-out-on-navigate {
+        /* Adjust duration to be slightly less than JS timeout for navigation */
+        animation: fadeOutPage 0.4s ease-out forwards;
+      }
+    </style>
   </head>
   <body>
     <nav class="bg-gray-800 text-white p-4">
