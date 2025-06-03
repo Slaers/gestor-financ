@@ -39,7 +39,7 @@ service cloud.firestore {
                      (
                        // Condition 1: Proprietário pode fazer qualquer atualização
                        resource.data.ownerId == request.auth.uid ||
-                       
+
                        // Condition 2: Usuário aceitando seu próprio convite
                        (
                          request.resource.data.members[request.auth.uid] != null && // Cond1: Adding self to members
@@ -54,7 +54,7 @@ service cloud.firestore {
                          ) &&
                          // Cond4: Ensure other critical non-map fields are unchanged by the invitee
                          request.resource.data.ownerId == resource.data.ownerId &&
-                         request.resource.data.name == resource.data.name 
+                         request.resource.data.name == resource.data.name
                          // Add other top-level non-map fields here if they exist and must be immutable by invitee
                        ) ||
 
@@ -77,6 +77,9 @@ service cloud.firestore {
                          // Add other top-level non-map fields here if they exist and must be immutable
                        )
                      );
+
+      // Permite que o proprietário EXCLUA o household.
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
 
       // Regras para a subcoleção 'transactions' dentro de um household
       match /transactions/{transactionId} {
