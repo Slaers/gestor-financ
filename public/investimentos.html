@@ -9,16 +9,37 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom scrollbar for webkit browsers (if needed, can be moved to a central CSS) */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; /* slate-100 */ border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; /* slate-300 */ border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; /* slate-400 */ }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; /* slate-800 */ }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; /* slate-600 */ }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; /* slate-500 */ }
+        /* Tailwind's 'hidden' class is used for display: none; this style block can be removed if not needed for other purposes. */
+    </style>
 </head>
 <body class="font-sans bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-colors duration-300">
-    <header class="bg-white dark:bg-slate-800 shadow-md relative">
-        <div class="container mx-auto p-4 flex justify-between items-center">
-            <button id="hamburger-button-investimentos" class="lg:hidden p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md z-20">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+    <nav id="desktop-sidebar-menu-investimentos" class="hidden lg:flex fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-800 shadow-xl z-40 flex-col space-y-2 p-4 transform -translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="flex justify-end">
+            <button id="close-desktop-sidebar-button-investimentos" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <nav id="mobile-menu-investimentos" class="hidden lg:hidden fixed inset-0 bg-white dark:bg-slate-800 p-4 z-30 flex flex-col space-y-2 transition-transform duration-300 ease-in-out transform translate-x-full">
+        </div>
+        <a href="../index.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Home</a>
+        <a href="investimentos.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Investimentos</a>
+        <a href="#" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Lançamentos</a>
+        <a href="#" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Família</a>
+        <a href="#" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Configurações</a>
+    </nav>
+
+    <header class="bg-white dark:bg-slate-800 shadow-md sticky top-0 z-20"> {/* Added sticky and z-20 */}
+        <div class="container mx-auto p-4 flex justify-between items-center">
+            <nav id="mobile-menu-investimentos" class="hidden fixed inset-0 bg-white dark:bg-slate-800 p-4 z-30 flex-col space-y-2 transition-transform duration-300 ease-in-out transform translate-x-full lg:hidden">
                 <div class="flex justify-end">
-                    <button id="close-mobile-menu-investimentos-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md">
+                    <button id="close-mobile-menu-button-investimentos" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -28,13 +49,22 @@
                 <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Família</a>
                 <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Configurações</a>
             </nav>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 ml-10 lg:ml-0">Painel de Investimentos</h1>
-            <a href="../index.html" class="hidden lg:inline-block bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-sky-700 dark:hover:bg-sky-500 transition-colors duration-150 ease-in-out text-sm">
-                Voltar ao Painel Principal
-            </a>
+
+            <div class="flex items-center justify-start gap-2"> {/* Wrapper for hamburger and title */}
+                <button id="hamburger-button-investimentos" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md z-50">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+                <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">Painel de Investimentos</h1>
+            </div>
+
+            <div class="hidden lg:flex items-center"> {/* Wrapper for "Voltar" button, hidden on small screens */}
+                <a href="../index.html" class="bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-sky-700 dark:hover:bg-sky-500 transition-colors duration-150 ease-in-out text-sm">
+                    Voltar ao Painel Principal
+                </a>
+            </div>
         </div>
     </header>
-    <main class="container mx-auto p-4 sm:p-6 md:p-8">
+    <main class="container mx-auto p-4 sm:p-6 md:p-8 pt-20"> {/* Added pt-20 to main to offset sticky header */}
     <div id="investments-dashboard" class="p-4">
         <!-- Summary Cards Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -173,30 +203,8 @@
     <script src="js/investment-logic.js"></script>
     <script src="js/household-investment-manager.js"></script>
     <script>
+        // Existing script content for investment page logic
         window.addEventListener('DOMContentLoaded', () => {
-            const hamburgerButtonInvestimentos = document.getElementById('hamburger-button-investimentos');
-            const closeMobileMenuInvestimentosButton = document.getElementById('close-mobile-menu-investimentos-button');
-            const mobileMenuInvestimentos = document.getElementById('mobile-menu-investimentos');
-
-            function toggleInvestimentosMenu() {
-                const isHidden = mobileMenuInvestimentos.classList.contains('hidden');
-                if (isHidden) {
-                    mobileMenuInvestimentos.classList.remove('hidden', 'translate-x-full');
-                    mobileMenuInvestimentos.classList.add('flex', 'translate-x-0');
-                } else {
-                    mobileMenuInvestimentos.classList.add('translate-x-full');
-                    setTimeout(() => {
-                        mobileMenuInvestimentos.classList.add('hidden');
-                        mobileMenuInvestimentos.classList.remove('flex', 'translate-x-0');
-                    }, 300); // Match transition duration
-                }
-            }
-
-            if (hamburgerButtonInvestimentos && mobileMenuInvestimentos && closeMobileMenuInvestimentosButton) {
-                hamburgerButtonInvestimentos.addEventListener('click', toggleInvestimentosMenu);
-                closeMobileMenuInvestimentosButton.addEventListener('click', toggleInvestimentosMenu);
-            }
-
             // --- Household ID Logic ---
             let currentHouseholdId = null;
 
@@ -795,6 +803,77 @@
               investmentDetailModal.classList.add('hidden');
             });
           }
+        });
+    </script>
+
+    <script type="module">
+        // --- Menu Navigation Logic for investimentos.html ---
+        const hamburgerButtonInvestimentos = document.getElementById('hamburger-button-investimentos');
+        const mobileMenuInvestimentos = document.getElementById('mobile-menu-investimentos');
+        const closeMobileMenuButtonInvestimentos = document.getElementById('close-mobile-menu-button-investimentos');
+
+        const desktopSidebarMenuInvestimentos = document.getElementById('desktop-sidebar-menu-investimentos');
+        const closeDesktopSidebarButtonInvestimentos = document.getElementById('close-desktop-sidebar-button-investimentos');
+
+        function toggleMobileMenuInvestimentos() {
+            if (mobileMenuInvestimentos) {
+                const isHidden = mobileMenuInvestimentos.classList.contains('hidden');
+                if (isHidden) {
+                    mobileMenuInvestimentos.classList.remove('hidden', 'translate-x-full');
+                    mobileMenuInvestimentos.classList.add('translate-x-0');
+                } else {
+                    mobileMenuInvestimentos.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        mobileMenuInvestimentos.classList.add('hidden');
+                        mobileMenuInvestimentos.classList.remove('translate-x-0');
+                    }, 300); // Match animation duration
+                }
+            }
+        }
+
+        function toggleDesktopSidebarInvestimentos() {
+            if (desktopSidebarMenuInvestimentos) {
+                const isHidden = desktopSidebarMenuInvestimentos.classList.contains('hidden');
+                if (isHidden) {
+                    desktopSidebarMenuInvestimentos.classList.remove('hidden', '-translate-x-full');
+                    desktopSidebarMenuInvestimentos.classList.add('translate-x-0');
+                } else {
+                    desktopSidebarMenuInvestimentos.classList.add('-translate-x-full');
+                    setTimeout(() => {
+                        desktopSidebarMenuInvestimentos.classList.add('hidden');
+                        desktopSidebarMenuInvestimentos.classList.remove('translate-x-0');
+                    }, 300); // Match animation duration
+                }
+            }
+        }
+
+        if (hamburgerButtonInvestimentos) {
+            hamburgerButtonInvestimentos.addEventListener('click', function() {
+                if (window.matchMedia('(min-width: 1024px)').matches) { // lg breakpoint
+                    toggleDesktopSidebarInvestimentos();
+                } else {
+                    toggleMobileMenuInvestimentos();
+                }
+            });
+        }
+
+        if (closeMobileMenuButtonInvestimentos) {
+            closeMobileMenuButtonInvestimentos.addEventListener('click', toggleMobileMenuInvestimentos);
+        }
+        if (closeDesktopSidebarButtonInvestimentos) {
+            closeDesktopSidebarButtonInvestimentos.addEventListener('click', toggleDesktopSidebarInvestimentos);
+        }
+
+        // Click outside to close desktop sidebar for investimentos page
+        document.addEventListener('click', function(event) {
+            if (window.matchMedia('(min-width: 1024px)').matches && desktopSidebarMenuInvestimentos && !desktopSidebarMenuInvestimentos.classList.contains('hidden')) {
+                const isClickInsideButton = hamburgerButtonInvestimentos && hamburgerButtonInvestimentos.contains(event.target);
+                const isClickInsideMenu = desktopSidebarMenuInvestimentos.contains(event.target);
+
+                if (!isClickInsideMenu && !isClickInsideButton) {
+                    toggleDesktopSidebarInvestimentos();
+                }
+            }
         });
     </script>
 
