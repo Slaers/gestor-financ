@@ -2,102 +2,57 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Regras para a coleção 'users'
-    // Permite que um usuário leia e escreva apenas seu próprio documento de perfil.
     match /users/{userIdRule} {
       allow read, write: if request.auth != null && request.auth.uid == userIdRule;
     }
 
-    // Regras para a coleção 'households'
     match /households/{householdId} {
-      // Permite que um usuário autenticado CRIE um novo household.
       allow create: if request.auth != null;
-
-      // Permite que um usuário LEIA um household SE ele for membro OU o proprietário.
-      // OU se houver convites pendentes (para permitir que o convidado leia o doc antes de aceitar)
-      allow read: if request.auth != null && 
-                    (
-                      request.auth.uid in resource.data.members ||
-                      resource.data.ownerId == request.auth.uid ||
-                      // If a user is potentially accepting an invite, they need to read the doc.
-                      // This condition assumes that if pendingInvites is not empty, a user might be
-                      // trying to access it to accept their invite.
-                      // This is broader than ideal for general reads; the update rule must be strong
-                      // to ensure only the correct user can actually accept the invite and modify data.
-                      (resource.data.pendingInvites != null && resource.data.pendingInvites.keys().size() > 0)
-                    );
-      
-      // Permite que um usuário autenticado LISTE/CONSULTE households.
-      // Necessário para a função checkAndDisplayInvites no cliente.
+      allow read: if request.auth != null && (request.auth.uid in resource.data.members || resource.data.ownerId == request.auth.uid || (resource.data.pendingInvites != null && resource.data.pendingInvites.keys().size() > 0));
       allow list: if request.auth != null;
-
-      // Permite ATUALIZAR um household se:
-      // 1. O solicitante é o proprietário.
-      // 2. OU o solicitante está aceitando seu próprio convite sob condições específicas.
-      // 3. OU o solicitante (não proprietário) está saindo da família.
-      allow update: if request.auth != null &&
-                     (
-                       // Condition 1: Proprietário pode fazer qualquer atualização
-                       resource.data.ownerId == request.auth.uid ||
-
-                       // Condition 2: Usuário aceitando seu próprio convite
-                       (
-                         request.resource.data.members[request.auth.uid] != null && // Cond1: Adding self to members
-                         !(request.auth.uid in resource.data.members) &&            // Cond2: Not a previous member
-                         // Cond3: Verifies one invite was removed from pendingInvites
-                         (
-                           resource.data.pendingInvites != null &&
-                           request.resource.data.pendingInvites != null &&
-                           // Ensure a pending invite for the user was actually removed by checking the key
-                           // This is a simplified check; a more robust check would verify the specific user's invite was removed.
-                           request.resource.data.pendingInvites.keys().size() == resource.data.pendingInvites.keys().size() - 1
-                         ) &&
-                         // Cond4: Ensure other critical non-map fields are unchanged by the invitee
-                         request.resource.data.ownerId == resource.data.ownerId &&
-                         request.resource.data.name == resource.data.name
-                         // Add other top-level non-map fields here if they exist and must be immutable by invitee
-                       ) ||
-
-                       // Condition 3: Usuário saindo da família
-                       (
-                         request.auth.uid in resource.data.members && // User is currently a member
-                         resource.data.ownerId != request.auth.uid && // User is NOT the owner
-                         request.resource.data.members[request.auth.uid] == null && // User is removing themselves from members map
-                         resource.data.members[request.auth.uid] != null && // User was in members map before this specific update
-                         request.resource.data.members.keys().size() == resource.data.members.keys().size() - 1 && // Size of members map decreases by exactly 1
-                         // Ensure other critical fields are unchanged
-                         request.resource.data.ownerId == resource.data.ownerId &&
-                         request.resource.data.name == resource.data.name &&
-                         // Ensure pendingInvites map is unchanged by this operation
-                         (
-                           (resource.data.pendingInvites == null && request.resource.data.pendingInvites == null) ||
-                           (resource.data.pendingInvites != null && request.resource.data.pendingInvites != null &&
-                            resource.data.pendingInvites.keys().size() == request.resource.data.pendingInvites.keys().size())
-                         )
-                         // Add other top-level non-map fields here if they exist and must be immutable
-                       )
-                     );
-
-      // Permite que o proprietário EXCLUA o household.
       allow delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
 
-      // Regras para a subcoleção 'transactions' dentro de um household
+      allow update: if request.auth != null && (
+        // Condição 1: Proprietário pode fazer qualquer atualização.
+        resource.data.ownerId == request.auth.uid ||
+
+        // Condição 2: Usuário aceitando seu próprio convite
+        (
+          request.resource.data.members[request.auth.uid] != null &&
+          !(request.auth.uid in resource.data.members) &&
+          resource.data.pendingInvites != null &&
+          resource.data.pendingInvites[request.auth.uid.replace(/\./g, '_')] != null &&
+          request.resource.data.pendingInvites[request.auth.uid.replace(/\./g, '_')] == null &&
+          request.resource.data.ownerId == resource.data.ownerId &&
+          request.resource.data.name == resource.data.name
+          // Adicione aqui outros campos que não devem ser alterados ao aceitar convite
+          // Para maior segurança, verifique se outros campos não foram alterados:
+          // Ex: resource.data.someOtherField == request.resource.data.someOtherField
+        ) ||
+
+        // Condição 3: Usuário não-proprietário saindo da família
+        (
+          request.auth.uid in resource.data.members &&
+          resource.data.ownerId != request.auth.uid &&
+          request.resource.data.members[request.auth.uid] == null &&
+          resource.data.members[request.auth.uid] != null &&
+          request.resource.data.members.keys().size() == resource.data.members.keys().size() - 1 &&
+          request.resource.data.ownerId == resource.data.ownerId &&
+          request.resource.data.name == resource.data.name &&
+          ((resource.data.pendingInvites == null && request.resource.data.pendingInvites == null) ||
+           (resource.data.pendingInvites != null && request.resource.data.pendingInvites != null &&
+            resource.data.pendingInvites.keys().size() == request.resource.data.pendingInvites.keys().size()))
+          // Adicione aqui outros campos que não devem ser alterados ao sair da família
+        )
+      );
+
       match /transactions/{transactionId} {
-        // Permite que MEMBROS do household realizem todas as operações (CRUD)
-        // nas transações desse household.
         allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
       }
 
-      // Regras para a subcoleção 'investments' dentro de um household
       match /investments/{investmentId} {
-        // Permite que MEMBROS do household realizem todas as operações (CRUD)
-        // nas contas de investimento desse household.
         allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
-
-        // Regras para a subcoleção 'entries' dentro de um investment
         match /entries/{entryId} {
-          // Permite que MEMBROS do household realizem todas as operações (CRUD)
-          // nas movimentações de investimento desse household.
           allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
         }
       }
