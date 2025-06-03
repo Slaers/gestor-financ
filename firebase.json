@@ -1,10 +1,12 @@
-{
+
+  {
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+    // Se você tinha "database": "(default)", pode manter ou remover se for o padrão
   },
   "hosting": {
-    "public": ".", // ou "public", dependendo da sua estrutura
+    "public": ".", // Ou a pasta correta onde está seu index.html
     "ignore": [
       "firebase.json",
       "**/.*",
