@@ -1115,17 +1115,27 @@
             function populateManageHouseholdUI() { 
                 const leaveFamilyBtn = document.getElementById('leave-family-btn');
                 const disbandFamilyBtn = document.getElementById('disband-family-btn');
+                const inviteMemberForm = document.getElementById('invite-member-form'); // Ensure form reference is also here
 
                 if (householdData && activeHouseholdId) {
+                    const isOwner = userId === householdData.ownerId; // Define isOwner once for this scope
+
                     if(createHouseholdSection) createHouseholdSection.classList.add('hidden');
                     if(manageHouseholdSection) manageHouseholdSection.classList.remove('hidden');
                     if(acceptInviteSection) acceptInviteSection.classList.add('hidden');
                     if(displayHouseholdName) displayHouseholdName.textContent = householdData.name || 'Família sem nome';
                     if(displayHouseholdId) displayHouseholdId.textContent = activeHouseholdId;
 
+                    if(inviteMemberForm) { // Control visibility for invite form
+                        if (isOwner) {
+                            inviteMemberForm.classList.remove('hidden');
+                        } else {
+                            inviteMemberForm.classList.add('hidden');
+                        }
+                    }
+
                     if(householdMembersList) householdMembersList.innerHTML = '';
                     if (householdData.members) {
-                        const isOwner = userId === householdData.ownerId; // Determine owner status once
                         Object.entries(householdData.members).forEach(([memberId, memberData]) => {
                             const li = document.createElement('li');
                             li.className = 'flex justify-between items-center py-1';
@@ -1134,7 +1144,7 @@
                             memberNameSpan.textContent = memberData.name || memberData.email;
                             li.appendChild(memberNameSpan);
 
-                            if (isOwner && userId !== memberId) { // Owner can remove others, but not themselves here
+                            if (isOwner && userId !== memberId) {
                                 const removeButton = document.createElement('button');
                                 removeButton.textContent = 'Remover';
                                 removeButton.className = 'bg-red-500 text-white text-xs py-0.5 px-2 rounded hover:bg-red-600 ml-2';
@@ -1145,8 +1155,13 @@
                         });
                     }
 
-                    // const isOwner = userId === householdData.ownerId; // Redundant, isOwner is defined above if householdData.members exists
-                    if(inviteMemberForm) inviteMemberForm.classList.toggle('hidden', !(userId === householdData.ownerId)); // Use direct check or ensure isOwner is defined earlier for all cases
+                    if (disbandFamilyBtn) {
+                        if (isOwner) {
+                            disbandFamilyBtn.classList.remove('hidden');
+                        } else {
+                            disbandFamilyBtn.classList.add('hidden');
+                        }
+                    }
 
                     if (leaveFamilyBtn) {
                         const isMember = householdData.members && householdData.members[userId];
@@ -1156,28 +1171,19 @@
                             leaveFamilyBtn.classList.add('hidden');
                         }
                     }
-                    if (disbandFamilyBtn) {
-                        // isOwner should be defined from the check within `if (householdData.members)` block,
-                        // or we ensure it's defined if householdData.members might be empty but householdData itself is not.
-                        // For safety, we can re-evaluate or ensure it's always available if householdData is true.
-                        const isOwnerForButtons = userId === householdData.ownerId;
-                        if (isOwnerForButtons) {
-                            disbandFamilyBtn.classList.remove('hidden');
-                        } else {
-                            disbandFamilyBtn.classList.add('hidden');
-                        }
-                    }
 
-                } else {
+                } else { // Not in a household or data not loaded
                     if(createHouseholdSection) createHouseholdSection.classList.remove('hidden');
                     if(manageHouseholdSection) manageHouseholdSection.classList.add('hidden');
+
+                    if(inviteMemberForm) inviteMemberForm.classList.add('hidden');
                     if(leaveFamilyBtn) leaveFamilyBtn.classList.add('hidden');
                     if(disbandFamilyBtn) disbandFamilyBtn.classList.add('hidden');
 
                     if (userId && userEmail) { 
                         checkAndDisplayInvites(userEmail, userId);
                     } else {
-                         if(acceptInviteSection) acceptInviteSection.classList.add('hidden');
+                         if(acceptInviteSection) acceptInviteSection.classList.add('hidden'); // Should already be hidden if manage-household is hidden
                     }
                 }
             }
