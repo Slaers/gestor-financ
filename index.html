@@ -113,6 +113,7 @@
                     </div>
                     <p id="invite-status" class="text-emerald-600 dark:text-emerald-400 text-sm text-center h-4 mt-2"></p>
                 </form>
+                <button id="disband-family-btn" class="hidden bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 dark:hover:bg-red-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30 mt-4 w-full sm:w-auto">Excluir Família</button>
                 <div>
                      <h4 class="text-md font-semibold text-slate-700 dark:text-slate-300 mb-2">Membros Atuais:</h4>
                      <ul id="household-members-list" class="list-disc list-inside text-slate-600 dark:text-slate-400 pl-2 space-y-1"></ul>
@@ -392,6 +393,7 @@
             const manageFamilyBtn = document.getElementById('manage-family-btn'); 
             const backToAppBtn = document.getElementById('back-to-app-btn');
             const leaveFamilyBtn = document.getElementById('leave-family-btn');
+            const disbandFamilyBtn = document.getElementById('disband-family-btn');
 
 
             const acceptInviteSection = document.getElementById('accept-invite-section');
@@ -516,6 +518,54 @@
                 }
             }
 
+            async function disbandFamily() {
+                if (!userId || !activeHouseholdId || !householdData) {
+                    alert("Erro: Usuário não logado ou família não selecionada.");
+                    return;
+                }
+
+                if (userId !== householdData.ownerId) {
+                    alert("Apenas o proprietário pode excluir a família.");
+                    return;
+                }
+
+                if (confirm("Tem certeza que deseja excluir esta família? Esta ação é PERMANENTE e removerá TODOS os membros. Todos os dados compartilhados serão perdidos.")) {
+                    showScreen('loading');
+                    const householdDocRef = doc(db, "households", activeHouseholdId);
+                    const memberIds = Object.keys(householdData.members || {});
+                    const batch = writeBatch(db);
+
+                    try {
+                        batch.delete(householdDocRef);
+                        memberIds.forEach(memberId => {
+                            const userDocRef = doc(db, "users", memberId);
+                            batch.update(userDocRef, { activeHouseholdId: null });
+                        });
+                        await batch.commit();
+
+                        activeHouseholdId = null;
+                        householdData = null;
+
+                        if (typeof unsubscribeFirestore === 'function') {
+                            unsubscribeFirestore();
+                            unsubscribeFirestore = null;
+                        }
+                        transactions = [];
+                        populateMonthFilter();
+                        updateDashboard();
+
+                        populateManageHouseholdUI();
+                        showScreen('household');
+
+                    } catch (error) {
+                        console.error("Erro ao excluir a família:", error);
+                        alert("Erro ao excluir a família: " + error.message);
+                        showScreen('household');
+                    }
+                }
+            }
+
+
             async function leaveFamily() {
                 if (!userId || !activeHouseholdId) {
                     alert("Erro: Usuário não logado ou família não selecionada.");
@@ -544,7 +594,7 @@
 
                         activeHouseholdId = null;
                         householdData = null;
-                        
+
                         if (typeof unsubscribeFirestore === 'function') {
                             unsubscribeFirestore();
                             unsubscribeFirestore = null;
@@ -554,7 +604,7 @@
                         updateDashboard(); // Clears charts and table
 
                         populateManageHouseholdUI(); // Should hide leave button, show create/join
-                        showScreen('household'); 
+                        showScreen('household');
 
                     } catch (error) {
                         console.error("Erro ao sair da família:", error);
@@ -1013,12 +1063,13 @@
             }
 
             function populateManageHouseholdUI() { 
-                const leaveFamilyBtn = document.getElementById('leave-family-btn'); // Get ref inside
+                const leaveFamilyBtn = document.getElementById('leave-family-btn');
+                const disbandFamilyBtn = document.getElementById('disband-family-btn');
 
                 if (householdData && activeHouseholdId) {
                     if(createHouseholdSection) createHouseholdSection.classList.add('hidden');
                     if(manageHouseholdSection) manageHouseholdSection.classList.remove('hidden');
-                    if(acceptInviteSection) acceptInviteSection.classList.add('hidden'); 
+                    if(acceptInviteSection) acceptInviteSection.classList.add('hidden');
                     if(displayHouseholdName) displayHouseholdName.textContent = householdData.name || 'Família sem nome';
                     if(displayHouseholdId) displayHouseholdId.textContent = activeHouseholdId;
 
@@ -1030,10 +1081,11 @@
                             if(householdMembersList) householdMembersList.appendChild(li);
                         });
                     }
-                    if(inviteMemberForm) inviteMemberForm.classList.toggle('hidden', userId !== householdData.ownerId);
+
+                    const isOwner = userId === householdData.ownerId;
+                    if(inviteMemberForm) inviteMemberForm.classList.toggle('hidden', !isOwner);
 
                     if (leaveFamilyBtn) {
-                        const isOwner = userId === householdData.ownerId;
                         const isMember = householdData.members && householdData.members[userId];
                         if (isMember && !isOwner) {
                             leaveFamilyBtn.classList.remove('hidden');
@@ -1041,12 +1093,20 @@
                             leaveFamilyBtn.classList.add('hidden');
                         }
                     }
+                    if (disbandFamilyBtn) {
+                        if (isOwner) {
+                            disbandFamilyBtn.classList.remove('hidden');
+                        } else {
+                            disbandFamilyBtn.classList.add('hidden');
+                        }
+                    }
 
                 } else {
                     if(createHouseholdSection) createHouseholdSection.classList.remove('hidden');
                     if(manageHouseholdSection) manageHouseholdSection.classList.add('hidden');
-                    if(leaveFamilyBtn) leaveFamilyBtn.classList.add('hidden'); 
-                    
+                    if(leaveFamilyBtn) leaveFamilyBtn.classList.add('hidden');
+                    if(disbandFamilyBtn) disbandFamilyBtn.classList.add('hidden');
+
                     if (userId && userEmail) { 
                         checkAndDisplayInvites(userEmail, userId);
                     } else {
@@ -1077,6 +1137,7 @@
             if(createHouseholdBtn) createHouseholdBtn.addEventListener('click', createHousehold);
             if(inviteMemberForm) inviteMemberForm.addEventListener('submit', handleInviteMember);
             if(leaveFamilyBtn) leaveFamilyBtn.addEventListener('click', leaveFamily);
+            if(disbandFamilyBtn) disbandFamilyBtn.addEventListener('click', disbandFamily);
             if(monthFilter) monthFilter.addEventListener('change', (e) => { selectedMonthYear = e.target.value; updateDashboard(); });
             if(addTransactionBtn) addTransactionBtn.addEventListener('click', openModal);
             if(closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
