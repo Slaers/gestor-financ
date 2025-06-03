@@ -185,6 +185,7 @@
                                 <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Data</th>
                                 <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Descrição</th>
                                 <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Categoria</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Tipo Pagamento</th>
                                 <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Valor</th>
                                 <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Lançado por</th>
                                 <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-center">Ação</th>
@@ -300,6 +301,16 @@
                     <div><label for="transaction-date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data</label><input type="date" id="transaction-date" name="date" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required></div>
                 </div>
                  <div class="mb-6"><label for="transaction-category" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Categoria</label><select id="transaction-category" name="category" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required></select></div>
+                <div class="mb-6">
+                    <label for="transaction-payment-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Pagamento</label>
+                    <select id="transaction-payment-type" name="paymentType" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
+                        <option value="" disabled selected>Selecione o tipo</option>
+                        <option value="PIX">PIX</option>
+                        <option value="Credito">Crédito</option>
+                        <option value="Debito">Débito</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                    </select>
+                </div>
                 <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Salvar Lançamento</button>
             </form>
         </div>
@@ -758,6 +769,7 @@
                         <td class="p-3 text-slate-600 dark:text-slate-400 text-sm">${displayDate}</td>
                         <td class="p-3 font-medium text-slate-800 dark:text-slate-200">${String(t.description || '')}</td>
                         <td class="p-3 text-slate-600 dark:text-slate-400 text-sm">${String(t.category || '')}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400 text-sm">${String(t.paymentType || '-')}</td>
                         <td class="p-3 font-semibold text-right ${t.type === 'Receita' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}">${formatCurrency(t.amount || 0)}</td>
                         <td class="p-3 text-slate-500 dark:text-slate-500 text-xs">${String(t.createdByName || 'Desconhecido')}</td>
                         <td class="p-3 text-center">
@@ -931,6 +943,7 @@
                     category: formData.get('category'),
                     amount: parseFloat(formData.get('amount')),
                     type: formData.get('type'),
+                    paymentType: formData.get('paymentType'), // Added payment type
                     createdByUserId: userId,
                     createdByName: userDisplayName || userEmail,
                     monthYear: formData.get('date').substring(0, 7),
