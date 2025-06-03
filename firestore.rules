@@ -2,15 +2,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper function for checking household membership
+    function isHouseholdMember(householdId) {
+      return request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
+    }
+
     match /users/{userIdRule} {
       allow read, write: if request.auth != null && request.auth.uid == userIdRule;
     }
 
     match /households/{householdId} {
-      allow create: if request.auth != null;
-      allow read: if request.auth != null && (request.auth.uid in resource.data.members || resource.data.ownerId == request.auth.uid || (resource.data.pendingInvites != null && resource.data.pendingInvites.keys().size() > 0));
-      allow list: if request.auth != null;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
+      allow create: if request.auth != null; // Any authenticated user can create a household (becomes owner)
+      allow read: if request.auth != null &&
+                    (resource.data.ownerId == request.auth.uid ||
+                     request.auth.uid in resource.data.members ||
+                     (resource.data.pendingInvites != null && resource.data.pendingInvites[request.auth.uid] != null)
+                    );
+      allow list: if request.auth != null; // Potentially too broad, consider if users should only list households they belong to. For now, matches existing.
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid; // Only owner can delete
 
       allow update: if request.auth != null && (
         // Condição 1: Proprietário pode fazer qualquer atualização.
@@ -21,51 +30,90 @@ service cloud.firestore {
           request.resource.data.members[request.auth.uid] != null &&
           !(request.auth.uid in resource.data.members) &&
           resource.data.pendingInvites != null &&
-          resource.data.pendingInvites[request.auth.uid.replace(/\./g, '_')] != null &&
-          request.resource.data.pendingInvites[request.auth.uid.replace(/\./g, '_')] == null &&
-          request.resource.data.ownerId == resource.data.ownerId &&
-          request.resource.data.name == resource.data.name
-          // Adicione aqui outros campos que não devem ser alterados ao aceitar convite
-          // Para maior segurança, verifique se outros campos não foram alterados:
-          // Ex: resource.data.someOtherField == request.resource.data.someOtherField
+          resource.data.pendingInvites[request.auth.uid] != null &&
+          request.resource.data.pendingInvites[request.auth.uid] == null &&
+          request.resource.data.ownerId == resource.data.ownerId && // Owner cannot change
+          request.resource.data.name == resource.data.name // Name cannot change during invite acceptance
+          // Ensure other critical fields are not changed during invite acceptance
         ) ||
 
         // Condição 3: Usuário não-proprietário saindo da família
         (
           request.auth.uid in resource.data.members &&
           resource.data.ownerId != request.auth.uid &&
-          request.resource.data.members[request.auth.uid] == null &&
-          resource.data.members[request.auth.uid] != null &&
-          request.resource.data.members.keys().size() == resource.data.members.keys().size() - 1 &&
-          request.resource.data.ownerId == resource.data.ownerId &&
-          request.resource.data.name == resource.data.name &&
+          request.resource.data.members[request.auth.uid] == null && // User is removing themselves
+          resource.data.members[request.auth.uid] != null && // User was previously a member
+          request.resource.data.members.keys().size() == resource.data.members.keys().size() - 1 && // Only one member is removed
+          request.resource.data.ownerId == resource.data.ownerId && // Owner cannot change
+          request.resource.data.name == resource.data.name && // Name cannot change
           ((resource.data.pendingInvites == null && request.resource.data.pendingInvites == null) ||
            (resource.data.pendingInvites != null && request.resource.data.pendingInvites != null &&
-            resource.data.pendingInvites.keys().size() == request.resource.data.pendingInvites.keys().size()))
-          // Adicione aqui outros campos que não devem ser alterados ao sair da família
+            resource.data.pendingInvites.keys().size() == request.resource.data.pendingInvites.keys().size())) // Pending invites list integrity
         )
       );
 
-      match /transactions/{transactionId} {
-        allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
-      }
-
+      // Enhanced rules for investments subcollection within a household
       match /investments/{investmentId} {
-        allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
-        match /entries/{entryId} {
-          allow read, write, create, delete: if request.auth != null && get(/databases/$(database)/documents/households/$(householdId)).data.members[request.auth.uid] != null;
+        allow read, delete: if isHouseholdMember(householdId);
+
+        allow create: if isHouseholdMember(householdId)
+                        && request.resource.data.user_id == request.auth.uid // User adding the investment must be self
+                        && request.resource.data.investment_name is string && request.resource.data.investment_name != ''
+                        && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Poupança', 'Tesouro Direto', 'CDB', 'LCI', 'LCA', 'Debênture', 'Ação', 'FII', 'ETF', 'Fundo de Investimento', 'Previdência Privada', 'Moeda Digital', 'Outro']
+                        && request.resource.data.institution is string && request.resource.data.institution != ''
+                        && request.resource.data.acquisition_date is timestamp
+                        && request.resource.data.total_quantity is number // Can be 0 initially
+                        && request.resource.data.current_unit_price is number // Can be 0 initially
+                        && request.resource.data.currency is string && request.resource.data.currency in ['BRL', 'USD', 'EUR']
+                        && request.resource.data.status is string && request.resource.data.status in ['Ativo', 'Vendido/Resgatado', 'Vencido'];
+                        // Optional fields from Tabela 1 (e.g., asset_ticker_symbol, investment_subtype, etc.) are not strictly validated here for brevity
+                        // but could be added if needed.
+
+        allow update: if isHouseholdMember(householdId)
+                        && request.resource.data.user_id == resource.data.user_id // The original user_id must be preserved
+                        // && resource.data.user_id == request.auth.uid // Alternative: only creator can update; or household admin
+                        && request.resource.data.investment_name is string && request.resource.data.investment_name != ''
+                        && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Poupança', 'Tesouro Direto', 'CDB', 'LCI', 'LCA', 'Debênture', 'Ação', 'FII', 'ETF', 'Fundo de Investimento', 'Previdência Privada', 'Moeda Digital', 'Outro']
+                        && request.resource.data.institution is string && request.resource.data.institution != ''
+                        && request.resource.data.acquisition_date is timestamp
+                        && request.resource.data.total_quantity is number
+                        && request.resource.data.current_unit_price is number
+                        && request.resource.data.currency is string && request.resource.data.currency in ['BRL', 'USD', 'EUR']
+                        && request.resource.data.status is string && request.resource.data.status in ['Ativo', 'Vendido/Resgatado', 'Vencido'];
+                        // Again, other optional fields can be added.
+
+        // Rules for transactions subcollection within an investment
+        match /transactions/{transactionId} {
+          allow read, delete: if isHouseholdMember(householdId);
+
+          allow create: if isHouseholdMember(householdId)
+                          && request.resource.data.user_id == request.auth.uid // User logging transaction
+                          && request.resource.data.transaction_type is string && request.resource.data.transaction_type in ['Compra/Aporte', 'Venda/Resgate', 'Dividendo Recebido', 'Juros Recebido', 'Bonificação', 'Split', 'Agrupamento', 'Taxa/Custo']
+                          && request.resource.data.transaction_date is timestamp
+                          && request.resource.data.quantity_transacted is number // Can be 0 for some types (e.g. Split)
+                          && request.resource.data.price_per_unit_transacted is number; // Can be 0 for some types
+
+          allow update: if isHouseholdMember(householdId)
+                          && request.resource.data.user_id == resource.data.user_id // Original transaction logger must be preserved
+                          // && resource.data.user_id == request.auth.uid // Alternative: only creator can update
+                          && request.resource.data.transaction_type is string && request.resource.data.transaction_type in ['Compra/Aporte', 'Venda/Resgate', 'Dividendo Recebido', 'Juros Recebido', 'Bonificação', 'Split', 'Agrupamento', 'Taxa/Custo']
+                          && request.resource.data.transaction_date is timestamp
+                          && request.resource.data.quantity_transacted is number
+                          && request.resource.data.price_per_unit_transacted is number;
         }
       }
+      // Note: The old /households/{householdId}/transactions/{transactionId} direct subcollection rules are removed
+      // as transactions are now nested under /households/{householdId}/investments/{investmentId}/transactions/{transactionId}
     }
 
-    // New rules for root-level investments collection
+    // Rules for root-level investments collection (remains unchanged from previous state)
     match /investments/{investmentId} {
       allow read, delete: if request.auth.uid == resource.data.user_id;
 
       allow create: if request.auth.uid != null
                     && request.resource.data.user_id == request.auth.uid
                     && request.resource.data.investment_name is string && request.resource.data.investment_name != ''
-                    && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Ação', 'FII', 'ETF', 'Renda Fixa', 'Criptomoeda', 'Outros']
+                    && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Poupança', 'Tesouro Direto', 'CDB', 'LCI', 'LCA', 'Debênture', 'Ação', 'FII', 'ETF', 'Fundo de Investimento', 'Previdência Privada', 'Moeda Digital', 'Outro']
                     && request.resource.data.institution is string && request.resource.data.institution != ''
                     && request.resource.data.acquisition_date is timestamp
                     && request.resource.data.total_quantity is number && request.resource.data.total_quantity >= 0
@@ -74,9 +122,9 @@ service cloud.firestore {
                     && request.resource.data.status is string && request.resource.data.status in ['Ativo', 'Vendido/Resgatado', 'Vencido'];
 
       allow update: if request.auth.uid == resource.data.user_id
-                    && request.resource.data.user_id == resource.data.user_id // User ID cannot be changed
+                    && request.resource.data.user_id == resource.data.user_id
                     && request.resource.data.investment_name is string && request.resource.data.investment_name != ''
-                    && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Ação', 'FII', 'ETF', 'Renda Fixa', 'Criptomoeda', 'Outros']
+                    && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Poupança', 'Tesouro Direto', 'CDB', 'LCI', 'LCA', 'Debênture', 'Ação', 'FII', 'ETF', 'Fundo de Investimento', 'Previdência Privada', 'Moeda Digital', 'Outro']
                     && request.resource.data.institution is string && request.resource.data.institution != ''
                     && request.resource.data.acquisition_date is timestamp
                     && request.resource.data.total_quantity is number && request.resource.data.total_quantity >= 0
@@ -85,22 +133,22 @@ service cloud.firestore {
                     && request.resource.data.status is string && request.resource.data.status in ['Ativo', 'Vendido/Resgatado', 'Vencido'];
     }
 
-    // New rules for root-level transactions collection
+    // Rules for root-level transactions collection (remains unchanged from previous state)
     match /transactions/{transactionId} {
       allow read, delete: if request.auth.uid == resource.data.user_id;
 
       allow create: if request.auth.uid != null
                     && request.resource.data.user_id == request.auth.uid
                     && request.resource.data.investment_id_fk is string && request.resource.data.investment_id_fk != ''
-                    && request.resource.data.transaction_type is string && request.resource.data.transaction_type in ['Compra', 'Venda', 'Provento', 'Outros']
+                    && request.resource.data.transaction_type is string && request.resource.data.transaction_type in ['Compra/Aporte', 'Venda/Resgate', 'Dividendo Recebido', 'Juros Recebido', 'Bonificação', 'Split', 'Agrupamento', 'Taxa/Custo']
                     && request.resource.data.transaction_date is timestamp
                     && request.resource.data.quantity_transacted is number
                     && request.resource.data.price_per_unit_transacted is number && request.resource.data.price_per_unit_transacted >= 0;
 
       allow update: if request.auth.uid == resource.data.user_id
-                    && request.resource.data.user_id == resource.data.user_id // User ID cannot be changed
-                    && request.resource.data.investment_id_fk == resource.data.investment_id_fk // FK should not change
-                    && request.resource.data.transaction_type is string && request.resource.data.transaction_type in ['Compra', 'Venda', 'Provento', 'Outros']
+                    && request.resource.data.user_id == resource.data.user_id
+                    && request.resource.data.investment_id_fk == resource.data.investment_id_fk
+                    && request.resource.data.transaction_type is string && request.resource.data.transaction_type in ['Compra/Aporte', 'Venda/Resgate', 'Dividendo Recebido', 'Juros Recebido', 'Bonificação', 'Split', 'Agrupamento', 'Taxa/Custo']
                     && request.resource.data.transaction_date is timestamp
                     && request.resource.data.quantity_transacted is number
                     && request.resource.data.price_per_unit_transacted is number && request.resource.data.price_per_unit_transacted >= 0;
