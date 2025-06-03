@@ -518,6 +518,56 @@
                 }
             }
 
+            async function removeMember(memberIdToRemove) {
+                if (!userId || !activeHouseholdId || !householdData) {
+                    alert("Erro: Usuário não logado ou família não selecionada.");
+                    return;
+                }
+
+                if (userId !== householdData.ownerId) {
+                    alert("Apenas o proprietário pode remover membros.");
+                    return;
+                }
+
+                if (memberIdToRemove === userId) {
+                    alert("O proprietário não pode remover a si mesmo desta forma.");
+                    return;
+                }
+
+                const memberDetails = householdData.members[memberIdToRemove];
+                const memberNameToConfirm = memberDetails?.name || memberDetails?.email || memberIdToRemove;
+
+                if (confirm(`Tem certeza que deseja remover ${memberNameToConfirm} desta família?`)) {
+                    showScreen('loading');
+                    const batch = writeBatch(db);
+                    const householdDocRef = doc(db, "households", activeHouseholdId);
+                    const userToRemoveDocRef = doc(db, "users", memberIdToRemove);
+
+                    try {
+                        batch.update(householdDocRef, {
+                            [`members.${memberIdToRemove}`]: deleteField()
+                        });
+                        batch.update(userToRemoveDocRef, {
+                            activeHouseholdId: null
+                        });
+                        await batch.commit();
+
+                        // UI will be updated by onSnapshot, but a direct call can make it feel faster
+                        // populateManageHouseholdUI();
+                        if(inviteStatusEl) {
+                            inviteStatusEl.textContent = "Membro removido com sucesso.";
+                            inviteStatusEl.className = 'text-emerald-600 dark:text-emerald-400 text-sm text-center h-4 mt-2';
+                            setTimeout(() => { inviteStatusEl.textContent = ''; }, 3000);
+                        }
+                         showScreen('household'); // Stay on the same screen to see the updated list
+                    } catch (error) {
+                        console.error("Erro ao remover membro:", error);
+                        alert("Erro ao remover membro: " + error.message);
+                        showScreen('household');
+                    }
+                }
+            }
+
             async function disbandFamily() {
                 if (!userId || !activeHouseholdId || !householdData) {
                     alert("Erro: Usuário não logado ou família não selecionada.");
@@ -1075,14 +1125,27 @@
 
                     if(householdMembersList) householdMembersList.innerHTML = '';
                     if (householdData.members) {
-                        Object.values(householdData.members).forEach(member => {
+                        const isOwner = userId === householdData.ownerId; // Determine owner status once
+                        Object.entries(householdData.members).forEach(([memberId, memberData]) => {
                             const li = document.createElement('li');
-                            li.textContent = member.name || member.email;
+                            li.className = 'flex justify-between items-center py-1';
+
+                            const memberNameSpan = document.createElement('span');
+                            memberNameSpan.textContent = memberData.name || memberData.email;
+                            li.appendChild(memberNameSpan);
+
+                            if (isOwner && userId !== memberId) { // Owner can remove others, but not themselves here
+                                const removeButton = document.createElement('button');
+                                removeButton.textContent = 'Remover';
+                                removeButton.className = 'bg-red-500 text-white text-xs py-0.5 px-2 rounded hover:bg-red-600 ml-2';
+                                removeButton.onclick = () => removeMember(memberId);
+                                li.appendChild(removeButton);
+                            }
                             if(householdMembersList) householdMembersList.appendChild(li);
                         });
                     }
 
-                    const isOwner = userId === householdData.ownerId;
+                    const isOwner = userId === householdData.ownerId; // This line is now duplicated, ensure it's defined if needed below or remove if not.
                     if(inviteMemberForm) inviteMemberForm.classList.toggle('hidden', !isOwner);
 
                     if (leaveFamilyBtn) {
