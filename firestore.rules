@@ -16,7 +16,8 @@ service cloud.firestore {
       allow read: if request.auth != null &&
                     (resource.data.ownerId == request.auth.uid ||
                      request.auth.uid in resource.data.members ||
-                     (resource.data.pendingInvites != null && resource.data.pendingInvites[request.auth.uid] != null)
+                     // Corrected: Check if the authenticated user's UID is a key in pendingInvites
+                     (resource.data.pendingInvites != null && request.auth.uid in resource.data.pendingInvites)
                     );
       allow list: if request.auth != null; // Potentially too broad, consider if users should only list households they belong to. For now, matches existing.
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid; // Only owner can delete
@@ -28,10 +29,10 @@ service cloud.firestore {
         // Condição 2: Usuário aceitando seu próprio convite
         (
           request.resource.data.members[request.auth.uid] != null &&
-          !(request.auth.uid in resource.data.members) &&
+          !(request.auth.uid in resource.data.members) && // User is not already a member
           resource.data.pendingInvites != null &&
-          resource.data.pendingInvites[request.auth.uid] != null &&
-          request.resource.data.pendingInvites[request.auth.uid] == null &&
+          request.auth.uid in resource.data.pendingInvites && // User has a pending invite
+          !(request.auth.uid in request.resource.data.pendingInvites) && // Invite is removed in the new data
           request.resource.data.ownerId == resource.data.ownerId && // Owner cannot change
           request.resource.data.name == resource.data.name // Name cannot change during invite acceptance
           // Ensure other critical fields are not changed during invite acceptance
@@ -39,18 +40,22 @@ service cloud.firestore {
 
         // Condição 3: Usuário não-proprietário saindo da família
         (
-          request.auth.uid in resource.data.members &&
-          resource.data.ownerId != request.auth.uid &&
-          request.resource.data.members[request.auth.uid] == null && // User is removing themselves
-          resource.data.members[request.auth.uid] != null && // User was previously a member
+          request.auth.uid in resource.data.members && // User is currently a member
+          resource.data.ownerId != request.auth.uid && // User is not the owner
+          !(request.auth.uid in request.resource.data.members) && // User is removing themselves from members map
           request.resource.data.members.keys().size() == resource.data.members.keys().size() - 1 && // Only one member is removed
           request.resource.data.ownerId == resource.data.ownerId && // Owner cannot change
           request.resource.data.name == resource.data.name && // Name cannot change
-          ((resource.data.pendingInvites == null && request.resource.data.pendingInvites == null) ||
+          ((resource.data.pendingInvites == null && request.resource.data.pendingInvites == null) || // Pending invites map remains unchanged or is null in both
            (resource.data.pendingInvites != null && request.resource.data.pendingInvites != null &&
             resource.data.pendingInvites.keys().size() == request.resource.data.pendingInvites.keys().size())) // Pending invites list integrity
         )
       );
+
+      // Regras para a subcoleção de transações (receitas/despesas da index.html)
+      match /transactions/{transactionId} {
+        allow read, write, delete: if isHouseholdMember(householdId);
+      }
 
       // Enhanced rules for investments subcollection within a household
       match /investments/{investmentId} {
@@ -59,7 +64,7 @@ service cloud.firestore {
         allow create: if isHouseholdMember(householdId)
                         && request.resource.data.user_id == request.auth.uid // User adding the investment must be self
                         && request.resource.data.investment_name is string && request.resource.data.investment_name != ''
-                        && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Poupança', 'Tesouro Direto', 'CDB', 'LCI', 'LCA', 'Debênture', 'Ação', 'FII', 'ETF', 'Fundo de Investimento', 'Previdência Privada', 'Moeda Digital', 'Outro']
+                        && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Poupança', 'Tesouro Direto', 'CDB', 'LCI', 'LCA', 'Debênture', 'Ação', 'FII', 'ETF', 'Fundo de Investimento', 'Previdência Privada', 'Moeda Digital', 'Outro', 'FGTS']
                         && request.resource.data.institution is string && request.resource.data.institution != ''
                         && request.resource.data.acquisition_date is timestamp
                         && request.resource.data.total_quantity is number // Can be 0 initially
@@ -73,7 +78,7 @@ service cloud.firestore {
                         && request.resource.data.user_id == resource.data.user_id // The original user_id must be preserved
                         // && resource.data.user_id == request.auth.uid // Alternative: only creator can update; or household admin
                         && request.resource.data.investment_name is string && request.resource.data.investment_name != ''
-                        && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Poupança', 'Tesouro Direto', 'CDB', 'LCI', 'LCA', 'Debênture', 'Ação', 'FII', 'ETF', 'Fundo de Investimento', 'Previdência Privada', 'Moeda Digital', 'Outro']
+                        && request.resource.data.investment_type is string && request.resource.data.investment_type in ['Poupança', 'Tesouro Direto', 'CDB', 'LCI', 'LCA', 'Debênture', 'Ação', 'FII', 'ETF', 'Fundo de Investimento', 'Previdência Privada', 'Moeda Digital', 'Outro', 'FGTS']
                         && request.resource.data.institution is string && request.resource.data.institution != ''
                         && request.resource.data.acquisition_date is timestamp
                         && request.resource.data.total_quantity is number
