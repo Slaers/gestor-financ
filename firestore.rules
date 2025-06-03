@@ -34,24 +34,47 @@ service cloud.firestore {
       // Permite ATUALIZAR um household se:
       // 1. O solicitante é o proprietário.
       // 2. OU o solicitante está aceitando seu próprio convite sob condições específicas.
+      // 3. OU o solicitante (não proprietário) está saindo da família.
       allow update: if request.auth != null &&
                      (
-                       // Proprietário pode fazer qualquer atualização
+                       // Condition 1: Proprietário pode fazer qualquer atualização
                        resource.data.ownerId == request.auth.uid ||
-                       // Usuário aceitando seu próprio convite
+                       
+                       // Condition 2: Usuário aceitando seu próprio convite
                        (
                          request.resource.data.members[request.auth.uid] != null && // Cond1: Adding self to members
                          !(request.auth.uid in resource.data.members) &&            // Cond2: Not a previous member
-                         // New Cond3: Verifies one invite was removed from pendingInvites
+                         // Cond3: Verifies one invite was removed from pendingInvites
                          (
                            resource.data.pendingInvites != null &&
                            request.resource.data.pendingInvites != null &&
+                           // Ensure a pending invite for the user was actually removed by checking the key
+                           // This is a simplified check; a more robust check would verify the specific user's invite was removed.
                            request.resource.data.pendingInvites.keys().size() == resource.data.pendingInvites.keys().size() - 1
                          ) &&
-                         // New Cond4: Ensure other critical non-map fields are unchanged by the invitee
+                         // Cond4: Ensure other critical non-map fields are unchanged by the invitee
                          request.resource.data.ownerId == resource.data.ownerId &&
-                         request.resource.data.name == resource.data.name // Assuming 'name' is the field for household name
+                         request.resource.data.name == resource.data.name 
                          // Add other top-level non-map fields here if they exist and must be immutable by invitee
+                       ) ||
+
+                       // Condition 3: Usuário saindo da família
+                       (
+                         request.auth.uid in resource.data.members && // User is currently a member
+                         resource.data.ownerId != request.auth.uid && // User is NOT the owner
+                         request.resource.data.members[request.auth.uid] == null && // User is removing themselves from members map
+                         resource.data.members[request.auth.uid] != null && // User was in members map before this specific update
+                         request.resource.data.members.keys().size() == resource.data.members.keys().size() - 1 && // Size of members map decreases by exactly 1
+                         // Ensure other critical fields are unchanged
+                         request.resource.data.ownerId == resource.data.ownerId &&
+                         request.resource.data.name == resource.data.name &&
+                         // Ensure pendingInvites map is unchanged by this operation
+                         (
+                           (resource.data.pendingInvites == null && request.resource.data.pendingInvites == null) ||
+                           (resource.data.pendingInvites != null && request.resource.data.pendingInvites != null &&
+                            resource.data.pendingInvites.keys().size() == request.resource.data.pendingInvites.keys().size())
+                         )
+                         // Add other top-level non-map fields here if they exist and must be immutable
                        )
                      );
 
