@@ -105,18 +105,21 @@
             <div id="manage-household-section" class="hidden">
                 <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-1">Minha Família: <span id="display-household-name" class="font-medium text-sky-700 dark:text-sky-400"></span></h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">ID: <code id="display-household-id" class="bg-slate-200 dark:bg-slate-600 dark:text-slate-300 p-0.5 rounded text-xs"></code></p>
-                <form id="invite-member-form" class="mb-6">
+                <form id="invite-member-form" class="mb-8">
                     <label for="invite-email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Convidar Membro por Email</label>
                     <div class="flex gap-2">
-                        <input type="email" id="invite-email" required class="flex-grow p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" placeholder="email@example.com">
-                        <button type="submit" class="bg-emerald-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Convidar</button>
+                        <input type="email" id="invite-email" required class="flex-grow p-3 sm:py-3.5 sm:px-4 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" placeholder="email@example.com">
+                        <button type="submit" class="bg-emerald-500 text-white font-semibold py-3 sm:py-3.5 px-4 sm:px-5 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Convidar</button>
                     </div>
                     <p id="invite-status" class="text-emerald-600 dark:text-emerald-400 text-sm text-center h-4 mt-2"></p>
                 </form>
-                <button id="disband-family-btn" class="hidden bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 dark:hover:bg-red-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30 mt-4 w-full sm:w-auto">Excluir Família</button>
                 <div>
                      <h4 class="text-md font-semibold text-slate-700 dark:text-slate-300 mb-2">Membros Atuais:</h4>
                      <ul id="household-members-list" class="list-disc list-inside text-slate-600 dark:text-slate-400 pl-2 space-y-1"></ul>
+                </div>
+                <!-- Botão Excluir Família movido para depois da lista e estilizado -->
+                <div class="flex justify-end mt-4">
+                    <button id="disband-family-btn" class="bg-red-600 text-white font-semibold text-sm py-1 px-3 rounded-lg hover:bg-red-700 dark:hover:bg-red-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30 hidden">Excluir Família</button>
                 </div>
                 <button id="leave-family-btn" class="hidden bg-rose-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-rose-600 dark:hover:bg-rose-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30 mt-4 w-full sm:w-auto">Sair da Família</button>
             </div>
@@ -1115,18 +1118,20 @@
             function populateManageHouseholdUI() { 
                 const leaveFamilyBtn = document.getElementById('leave-family-btn');
                 const disbandFamilyBtn = document.getElementById('disband-family-btn');
-                const inviteMemberForm = document.getElementById('invite-member-form'); // Ensure form reference is also here
+                const inviteMemberForm = document.getElementById('invite-member-form');
 
                 if (householdData && activeHouseholdId) {
-                    const isOwner = userId === householdData.ownerId; // Define isOwner once for this scope
+                    const isOwner = userId === householdData.ownerId;
 
                     if(createHouseholdSection) createHouseholdSection.classList.add('hidden');
                     if(manageHouseholdSection) manageHouseholdSection.classList.remove('hidden');
-                    if(acceptInviteSection) acceptInviteSection.classList.add('hidden');
+                    if(acceptInviteSection) acceptInviteSection.classList.add('hidden'); // Invites are handled separately below or if user has no family.
+
                     if(displayHouseholdName) displayHouseholdName.textContent = householdData.name || 'Família sem nome';
                     if(displayHouseholdId) displayHouseholdId.textContent = activeHouseholdId;
 
-                    if(inviteMemberForm) { // Control visibility for invite form
+                    // Invite form visibility
+                    if(inviteMemberForm) {
                         if (isOwner) {
                             inviteMemberForm.classList.remove('hidden');
                         } else {
@@ -1134,6 +1139,7 @@
                         }
                     }
 
+                    // Render members list
                     if(householdMembersList) householdMembersList.innerHTML = '';
                     if (householdData.members) {
                         Object.entries(householdData.members).forEach(([memberId, memberData]) => {
@@ -1155,6 +1161,7 @@
                         });
                     }
 
+                    // Disband Family button visibility
                     if (disbandFamilyBtn) {
                         if (isOwner) {
                             disbandFamilyBtn.classList.remove('hidden');
@@ -1163,6 +1170,7 @@
                         }
                     }
 
+                    // Leave Family button visibility
                     if (leaveFamilyBtn) {
                         const isMember = householdData.members && householdData.members[userId];
                         if (isMember && !isOwner) {
@@ -1172,18 +1180,21 @@
                         }
                     }
 
-                } else { // Not in a household or data not loaded
+                } else { // User is not in a household or data is not loaded
                     if(createHouseholdSection) createHouseholdSection.classList.remove('hidden');
-                    if(manageHouseholdSection) manageHouseholdSection.classList.add('hidden');
+                    if(manageHouseholdSection) manageHouseholdSection.classList.add('hidden'); // Hide manage section
 
+                    // Ensure all related controls are hidden if not in a household
                     if(inviteMemberForm) inviteMemberForm.classList.add('hidden');
                     if(leaveFamilyBtn) leaveFamilyBtn.classList.add('hidden');
                     if(disbandFamilyBtn) disbandFamilyBtn.classList.add('hidden');
+                    if(householdMembersList) householdMembersList.innerHTML = ''; // Clear member list
 
+                    // Show pending invites if any
                     if (userId && userEmail) { 
-                        checkAndDisplayInvites(userEmail, userId);
+                        checkAndDisplayInvites(userEmail, userId); // This function itself handles visibility of acceptInviteSection
                     } else {
-                         if(acceptInviteSection) acceptInviteSection.classList.add('hidden'); // Should already be hidden if manage-household is hidden
+                         if(acceptInviteSection) acceptInviteSection.classList.add('hidden');
                     }
                 }
             }
