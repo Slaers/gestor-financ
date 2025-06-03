@@ -1,39 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Investimentos - Gestão de Lançamentos</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      @keyframes fadeInPage {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      body.fade-in-on-load {
-        animation: fadeInPage 0.5s ease-out forwards;
-      }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="fade-in-on-load">
-    <h1 class="text-2xl font-bold p-4">Painel de Investimentos</h1> <!-- Changed Page Title -->
+<body class="font-sans bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-colors duration-300">
+    <header class="bg-white dark:bg-slate-800 shadow-md">
+        <div class="container mx-auto p-4 flex justify-between items-center">
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">Painel de Investimentos</h1>
+            <a href="../index.html" class="bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-sky-700 dark:hover:bg-sky-500 transition-colors duration-150 ease-in-out text-sm">
+                Voltar ao Painel Principal
+            </a>
+        </div>
+    </header>
+    <main class="container mx-auto p-4 sm:p-6 md:p-8">
     <div id="investments-dashboard" class="p-4">
         <!-- Summary Cards Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg shadow">
+            <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
                 <h3 class="text-gray-500 text-sm">Patrimônio Total Atual</h3>
                 <p id="db-total-patrimonio" class="text-2xl font-semibold">R$ 0,00 <span id="db-total-patrimonio-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span></p>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
+            <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
                 <h3 class="text-gray-500 text-sm">Total Investido</h3>
                 <p id="db-total-investido" class="text-2xl font-semibold">R$ 0,00 <span id="db-total-investido-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span></p>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
+            <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
                 <h3 class="text-gray-500 text-sm">Resultado Total (R$)</h3>
                 <p id="db-resultado-reais" class="text-2xl font-semibold text-gray-700">R$ 0,00 <span id="db-resultado-reais-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span></p>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
+            <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
                 <h3 class="text-gray-500 text-sm">Resultado Total (%)</h3>
                 <p id="db-resultado-percentual" class="text-2xl font-semibold text-gray-700">0,00% <span id="db-resultado-percentual-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span></p>
             </div>
@@ -41,11 +43,11 @@
 
         <!-- Charts Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="text-xl font-semibold mb-2">Alocação da Carteira</h3>
-                <canvas id="alocacaoCarteiraChart"></canvas>
+            <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
+                <h3 class="text-xl font-semibold mb-2">Composição da Carteira</h3>
+                <canvas id="composicaoCarteiraChart"></canvas>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
+            <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
                 <h3 class="text-xl font-semibold mb-2">Desempenho da Carteira</h3>
                 <div class="mb-2">
                     <button class="btn-period text-sm py-1 px-2 bg-gray-200 rounded hover:bg-gray-300">1M</button>
@@ -60,7 +62,7 @@
 
         <!-- Ações Rápidas Section -->
         <div class="mb-6">
-            <button id="btn-add-new-investment" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Adicionar Novo Investimento</button>
+            <button id="btn-add-new-investment" class="bg-sky-600 text-white font-semibold py-2 px-3 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm"><span class="text-lg">+</span> <span>Adicionar Investimento</span></button>
         </div>
     </div>
     <div id="investments-list" class="p-4 mt-6 border-t pt-6"> <!-- Added margin and border for separation -->
@@ -68,8 +70,8 @@
 
         <!-- Toolbar/Controls Area -->
         <div class="mb-4 flex flex-wrap items-center gap-2 md:gap-4"> <!-- Adjusted gap for smaller screens -->
-            <input type="search" id="search-investments" placeholder="Pesquisar por nome ou ticker..." class="p-2 border rounded w-full md:w-1/3 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-            <select id="filter-type" class="p-2 border rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <input type="search" id="search-investments" placeholder="Pesquisar por nome ou ticker..." class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 py-2 px-3 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none w-full md:w-1/3">
+            <select id="filter-type" class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 py-2 px-3 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none">
                 <option value="">Tipo de Investimento</option>
                 <option value="Ação">Ação</option>
                 <option value="FII">FII</option>
@@ -78,13 +80,13 @@
                 <option value="Criptomoeda">Criptomoeda</option>
                 <option value="Outros">Outros</option>
             </select>
-            <select id="filter-status" class="p-2 border rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <select id="filter-status" class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 py-2 px-3 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none">
                 <option value="">Status</option>
                 <option value="Ativo">Ativo</option>
                 <option value="Vendido/Resgatado">Vendido/Resgatado</option>
                 <option value="Vencido">Vencido</option>
             </select>
-            <select id="filter-institution" class="p-2 border rounded shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <select id="filter-institution" class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 py-2 px-3 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none">
                 <option value="">Instituição</option>
                 <!-- Options to be populated dynamically -->
                 <option value="XP Investimentos">XP Investimentos</option>
@@ -94,48 +96,48 @@
         </div>
 
         <!-- Table of Investments -->
-        <div class="overflow-x-auto bg-white shadow rounded-lg">
-            <table id="investments-table" class="min-w-full border">
-                <thead class="bg-gray-50">
+        <div class="overflow-x-auto bg-white dark:bg-slate-800/70 backdrop-blur-sm shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700 rounded-xl">
+            <table id="investments-table" class="min-w-full">
+                <thead class="border-b-2 border-slate-200 dark:border-slate-700">
                     <tr>
-                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nome do Investimento</th>
-                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ticker</th>
-                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
-                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Instituição</th>
-                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Qtd.</th>
-                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Preço Méd. Aq.</th>
-                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Val. Investido</th>
-                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Preço Atual</th>
-                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Val. Total Atual</th>
-                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Resultado (R$)</th>
-                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Resultado (%)</th>
-                        <th class="p-3 border-b text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">% Carteira</th>
-                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vencimento</th>
-                        <th class="p-3 border-b text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                        <th class="p-3 border-b text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ações</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-left">Nome do Investimento</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-left">Ticker</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-left">Tipo</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-left">Instituição</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Qtd.</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Preço Méd. Aq.</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Val. Investido</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Preço Atual</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Val. Total Atual</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Resultado (R$)</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Resultado (%)</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">% Carteira</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-left">Vencimento</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-left">Status</th>
+                        <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="investments-table-body">
                     <tr id="investments-table-loading" class="text-center">
-                        <td colspan="15" class="p-4 text-gray-500">Carregando investimentos...</td>
+                        <td colspan="15" class="p-4 text-slate-500 dark:text-slate-400">Carregando investimentos...</td>
                     </tr>
                     <!-- Sample Row for Visualization -->
-                    <tr class="hover:bg-gray-50 border-b">
-                        <td class="p-3 text-sm text-gray-700">Tesouro Selic 2029</td>
-                        <td class="p-3 text-sm text-gray-700">TS2029</td>
-                        <td class="p-3 text-sm text-gray-700">Tesouro Direto</td>
-                        <td class="p-3 text-sm text-gray-700">XP Investimentos</td>
-                        <td class="p-3 text-sm text-gray-700 text-right">2</td>
-                        <td class="p-3 text-sm text-gray-700 text-right">R$ 13.800,00</td>
-                        <td class="p-3 text-sm text-gray-700 text-right">R$ 27.600,00</td>
-                        <td class="p-3 text-sm text-gray-700 text-right">R$ 14.000,00</td>
-                        <td class="p-3 text-sm text-gray-700 text-right">R$ 28.000,00</td>
-                        <td class="p-3 text-sm text-green-600 text-right">R$ 400,00</td>
-                        <td class="p-3 text-sm text-green-600 text-right">1.45%</td>
-                        <td class="p-3 text-sm text-gray-700 text-right">15.00%</td>
-                        <td class="p-3 text-sm text-gray-700">01/01/2029</td>
-                        <td class="p-3 text-sm text-gray-700"><span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">Ativo</span></td>
-                        <td class="p-3 text-sm text-gray-700 text-center whitespace-nowrap">
+                    <tr class="border-b border-slate-200 dark:border-slate-700">
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300">Tesouro Selic 2029</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300">TS2029</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300">Tesouro Direto</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300">XP Investimentos</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-right">2</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-right">R$ 13.800,00</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-right">R$ 27.600,00</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-right">R$ 14.000,00</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-right">R$ 28.000,00</td>
+                        <td class="p-3 text-sm text-green-600 dark:text-green-400 text-right">R$ 400,00</td>
+                        <td class="p-3 text-sm text-green-600 dark:text-green-400 text-right">1.45%</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-right">15.00%</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300">01/01/2029</td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300"><span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">Ativo</span></td>
+                        <td class="p-3 text-sm text-slate-700 dark:text-slate-300 text-center whitespace-nowrap">
                             <button class="text-blue-600 hover:text-blue-800 p-1" title="Ver Detalhes/Editar" aria-label="Ver Detalhes ou Editar Investimento">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828zM5 12V7.172l2.586-2.586A2 2 0 0110 4.172l-2.586 2.586L5 9.172V12zM15 14H5a1 1 0 00-1 1v2a1 1 0 001 1h10a1 1 0 001-1v-2a1 1 0 00-1-1z"/></svg>
                             </button>
@@ -152,7 +154,7 @@
             </table>
         </div>
     </div>
-
+    </main>
     <script src="js/investment-logic.js"></script>
     <script src="js/household-investment-manager.js"></script>
     <script>
@@ -173,6 +175,103 @@
           }
         }
         // --- End of Household ID Logic ---
+
+        let composicaoChartInstance = null; // Variable to hold the chart instance
+        let allInvestmentMetrics = []; // Declare at a higher scope
+
+        function renderComposicaoCarteiraChart(investmentsDataWithMetrics) {
+          const ctx = document.getElementById('composicaoCarteiraChart')?.getContext('2d');
+          if (!ctx) return;
+
+          if (composicaoChartInstance) {
+            composicaoChartInstance.destroy(); // Destroy previous instance if it exists
+          }
+
+          const dataByInvestmentType = {};
+          let totalPortfolioValue = 0;
+
+          investmentsDataWithMetrics.forEach(inv => {
+            const type = inv.investment_type || 'Outro'; // Default to 'Outro' if type is undefined
+            const value = inv.metrics?.market_value_current_holdings || 0;
+            dataByInvestmentType[type] = (dataByInvestmentType[type] || 0) + value;
+            totalPortfolioValue += value;
+          });
+
+          const labels = Object.keys(dataByInvestmentType);
+          const dataValues = Object.values(dataByInvestmentType);
+
+          // Define a set of colors, similar to index.html's chart
+          const backgroundColors = ['#0ea5e9', '#14b8a6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#8b5cf6', '#f43f5e', '#d946ef', '#84cc16'];
+          const hoverBackgroundColors = backgroundColors.map(color => `${color}B3`); // Add some opacity on hover
+
+          const isDarkMode = document.documentElement.classList.contains('dark');
+          const chartLabelColor = isDarkMode ? '#cbd5e1' : '#334155'; // slate-300 or slate-700
+          const tooltipBgColor = isDarkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255,255,255,0.9)'; // slate-800 with opacity or white
+          const tooltipTitleColor = isDarkMode ? '#f1f5f9' : '#1e293b'; // slate-100 or slate-800
+          const tooltipBodyColor = isDarkMode ? '#e2e8f0' : '#334155'; // slate-200 or slate-700
+          const tooltipBorderColor = isDarkMode ? '#475569' : '#e2e8f0'; // slate-600 or slate-200
+
+          if (labels.length === 0 || totalPortfolioValue === 0) {
+            // Handle no data: display a message or clear the canvas
+            // For now, just don't create the chart or clear it if it exists
+            // A more sophisticated message could be drawn onto the canvas directly.
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            // Optionally display a message in the center of the canvas
+            // ctx.textAlign = 'center';
+            // ctx.fillStyle = chartLabelColor;
+            // ctx.fillText("Sem dados para exibir a composição da carteira.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+            return;
+          }
+
+          composicaoChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: 'Composição da Carteira',
+                data: dataValues,
+                backgroundColor: backgroundColors.slice(0, labels.length),
+                hoverBackgroundColor: hoverBackgroundColors.slice(0, labels.length),
+                borderColor: isDarkMode ? '#1e293b' : '#f8fafc', // slate-800 or slate-50
+                borderWidth: 3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    color: chartLabelColor,
+                    boxWidth: 12,
+                    padding: 15,
+                    font: { size: 10 }
+                  }
+                },
+                tooltip: {
+                  backgroundColor: tooltipBgColor,
+                  titleColor: tooltipTitleColor,
+                  bodyColor: tooltipBodyColor,
+                  borderColor: tooltipBorderColor,
+                  borderWidth: 1,
+                  callbacks: {
+                    label: function(context) {
+                      let label = context.label || '';
+                      if (label) {
+                        label += ': ';
+                      }
+                      if (context.parsed !== null) {
+                        label += 'R$ ' + context.parsed.toFixed(2).replace('.', ',') + ' (' + ((context.parsed / totalPortfolioValue) * 100).toFixed(2) + '%)';
+                      }
+                      return label;
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
 
         // --- Loading State & UI Update Functions ---
         function showLoading(elementId) {
@@ -203,10 +302,11 @@
             if (investments.length === 0) {
               tbody.innerHTML = '<tr><td colspan="15" class="p-4 text-center text-gray-500">Nenhum investimento encontrado para esta família.</td></tr>';
               updateDashboardSummary([]);
+              renderComposicaoCarteiraChart([]); // Ensure chart is cleared or shows no data
               return;
             }
 
-            const allInvestmentMetrics = [];
+            // const allInvestmentMetrics = []; // Already declared globally
 
             for (const inv of investments) {
               const transactions = await getHouseholdInvestmentTransactions(currentHouseholdId, inv.id);
@@ -279,6 +379,7 @@
                 </button>
               `;
             }
+            renderComposicaoCarteiraChart(allInvestmentMetrics); // Call the new chart rendering function
             updateDashboardSummary(allInvestmentMetrics.map(inv => inv.metrics)); // Pass only metrics array
             updatePortfolioPercentageColumn(allInvestmentMetrics); // Pass array of inv + metrics
 
@@ -588,6 +689,73 @@
             openInvestmentDetailModal('sampleInvestmentId');
           });
 
+          const detailEditBtn = document.getElementById('detail-edit-btn');
+          if (detailEditBtn) {
+            detailEditBtn.addEventListener('click', () => {
+              const investmentId = investmentDetailModal.getAttribute('data-current-investment-id');
+              if (!investmentId) {
+                alert('ID do investimento não encontrado.');
+                return;
+              }
+
+              const investmentToEdit = allInvestmentMetrics.find(inv => inv.id === investmentId);
+              if (!investmentToEdit) {
+                alert('Dados do investimento não encontrados para edição.');
+                return;
+              }
+
+              // Populate the form
+              document.getElementById('investment_id').value = investmentToEdit.id;
+              document.getElementById('investment_name').value = investmentToEdit.investment_name || '';
+              document.getElementById('asset_ticker_symbol').value = investmentToEdit.asset_ticker_symbol || '';
+              document.getElementById('investment_type').value = investmentToEdit.investment_type || '';
+              document.getElementById('investment_subtype').value = investmentToEdit.investment_subtype || '';
+              document.getElementById('institution').value = investmentToEdit.institution || '';
+              document.getElementById('account_identifier').value = investmentToEdit.account_identifier || '';
+              document.getElementById('currency').value = investmentToEdit.currency || 'BRL';
+              document.getElementById('status').value = investmentToEdit.status || 'Ativo';
+              document.getElementById('risk_level').value = investmentToEdit.risk_level || '';
+              document.getElementById('objective').value = investmentToEdit.objective || '';
+              document.getElementById('notes').value = investmentToEdit.notes || '';
+
+              // Populate initial_acquisition_date (if available on the main investment object)
+              document.getElementById('initial_acquisition_date').value = investmentToEdit.acquisition_date && investmentToEdit.acquisition_date.seconds ? new Date(investmentToEdit.acquisition_date.seconds * 1000).toISOString().split('T')[0] : '';
+
+              // Clear "initial" fields that are transaction-specific for new investments
+              document.getElementById('initial_quantity').value = '';
+              document.getElementById('initial_acquisition_price').value = '';
+              document.getElementById('initial_fees_paid').value = '';
+
+              // Trigger change on investment_type to show correct specific fields in the form
+              document.getElementById('investment_type').dispatchEvent(new Event('change'));
+
+              // Populate type-specific fields
+              if (investmentToEdit.investment_type === 'Tesouro Direto' || investmentToEdit.investment_type === 'CDB' || investmentToEdit.investment_type === 'LCI' || investmentToEdit.investment_type === 'LCA' || investmentToEdit.investment_type === 'Debênture' || investmentToEdit.investment_type === 'Poupança') {
+                document.getElementById('maturity_date').value = investmentToEdit.maturity_date && investmentToEdit.maturity_date.seconds ? new Date(investmentToEdit.maturity_date.seconds * 1000).toISOString().split('T')[0] : '';
+                document.getElementById('interest_rate_type').value = investmentToEdit.interest_rate_type || '';
+                document.getElementById('contracted_rate_percentage').value = investmentToEdit.contracted_rate_percentage || '';
+                document.getElementById('indexer').value = investmentToEdit.indexer || '';
+                document.getElementById('taxation_type').value = investmentToEdit.taxation_type || '';
+                document.getElementById('is_fgc_covered').checked = investmentToEdit.is_fgc_covered || false;
+              } else if (investmentToEdit.investment_type === 'Ação') {
+                document.getElementById('stock_exchange').value = investmentToEdit.stock_exchange || '';
+                document.getElementById('sector').value = investmentToEdit.sector || '';
+                document.getElementById('cnpj_acao').value = investmentToEdit.cnpj_acao || '';
+              } else if (investmentToEdit.investment_type === 'FII' || investmentToEdit.investment_type === 'ETF' || investmentToEdit.investment_type === 'Fundo de Investimento' || investmentToEdit.investment_type === 'Previdência Privada') {
+                document.getElementById('fund_cnpj').value = investmentToEdit.fund_cnpj || '';
+                document.getElementById('administrator_fee_percentage').value = investmentToEdit.administrator_fee_percentage || '';
+                document.getElementById('performance_fee_percentage').value = investmentToEdit.performance_fee_percentage || '';
+                document.getElementById('benchmark').value = investmentToEdit.benchmark || '';
+              } else if (investmentToEdit.investment_type === 'Moeda Digital') {
+                document.getElementById('crypto_asset_code').value = investmentToEdit.crypto_asset_code || '';
+                document.getElementById('exchange_platform_wallet').value = investmentToEdit.exchange_platform_wallet || '';
+              }
+
+              document.getElementById('form-modal-title-id').textContent = 'Editar Investimento';
+              investmentModal.classList.remove('hidden');
+              investmentDetailModal.classList.add('hidden');
+            });
+          }
         });
 
     </script>
@@ -713,12 +881,12 @@
     </div>
 
     <!-- Investment Form Modal -->
-    <div id="investment-form-modal" role="dialog" aria-modal="true" aria-labelledby="form-modal-title-id" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-      <div class="relative top-10 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-md bg-white mb-10"> <!-- Adjusted top margin -->
+    <div id="investment-form-modal" role="dialog" aria-modal="true" aria-labelledby="form-modal-title-id" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50">
+      <div class="relative top-10 mx-auto p-6 sm:p-8 w-full max-w-3xl shadow-2xl dark:shadow-xl dark:shadow-black/40 rounded-xl bg-white dark:bg-slate-700"> <!-- Adjusted top margin, padding, and removed border, mb-10 -->
         <!-- Modal Header -->
         <div class="flex justify-between items-center pb-3 mb-4 border-b">
-          <p id="form-modal-title-id" class="text-2xl font-bold">Adicionar Novo Investimento</p> <!-- Added ID for aria-labelledby -->
-          <button id="modal-close-btn" class="modal-close cursor-pointer z-50" aria-label="Fechar modal de formulário">
+          <p id="form-modal-title-id" class="text-2xl font-bold text-slate-900 dark:text-slate-100">Adicionar Novo Investimento</p> <!-- Added ID for aria-labelledby -->
+          <button id="modal-close-btn" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 text-3xl leading-none transition-colors duration-150 ease-in-out cursor-pointer z-50" aria-label="Fechar modal de formulário">
             <svg class="fill-current text-black hover:text-gray-700" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 18 18"><path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path></svg>
           </button>
         </div>
@@ -727,20 +895,21 @@
           <input type="hidden" id="investment_id" name="investment_id"> <!-- For editing -->
           <div id="form-message" class="mb-3 text-sm text-center"></div> <!-- Form message placeholder -->
 
-          <h3 class="text-lg font-semibold mb-3 text-gray-700">Informações Gerais</h3>
+          <h3 class="text-lg font-semibold mb-3 text-slate-800 dark:text-slate-200">Informações Gerais</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
             <div class="mb-4">
-              <label for="investment_name" class="block text-sm font-medium text-gray-700 mb-1">Nome do Investimento <span class="text-red-500">*</span></label>
-              <input type="text" name="investment_name" id="investment_name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+              <label for="investment_name" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome do Investimento <span class="text-red-500">*</span></label>
+              <input type="text" name="investment_name" id="investment_name" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
             </div>
             <div class="mb-4">
-              <label for="asset_ticker_symbol" class="block text-sm font-medium text-gray-700 mb-1">Ticker / Símbolo</label>
-              <input type="text" name="asset_ticker_symbol" id="asset_ticker_symbol" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <label for="asset_ticker_symbol" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ticker / Símbolo</label>
+              <input type="text" name="asset_ticker_symbol" id="asset_ticker_symbol" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
             </div>
             <div class="mb-4">
-              <label for="investment_type" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Investimento <span class="text-red-500">*</span></label>
-              <select name="investment_type" id="investment_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+              <label for="investment_type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Investimento <span class="text-red-500">*</span></label>
+              <select name="investment_type" id="investment_type" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
                 <option value="">Selecione o Tipo</option>
+                <option value="FGTS">FGTS</option>
                 <option value="Poupança">Poupança</option>
                 <option value="Tesouro Direto">Tesouro Direto</option>
                 <option value="CDB">CDB</option>
@@ -757,36 +926,36 @@
               </select>
             </div>
             <div class="mb-4">
-              <label for="investment_subtype" class="block text-sm font-medium text-gray-700 mb-1">Subtipo (Opcional)</label>
-              <input type="text" name="investment_subtype" id="investment_subtype" placeholder="Ex: Tesouro Selic 2029, Apple Inc." class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <label for="investment_subtype" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subtipo (Opcional)</label>
+              <input type="text" name="investment_subtype" id="investment_subtype" placeholder="Ex: Tesouro Selic 2029, Apple Inc." class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
             </div>
             <div class="mb-4">
-              <label for="institution" class="block text-sm font-medium text-gray-700 mb-1">Instituição Financeira / Corretora <span class="text-red-500">*</span></label>
-              <input type="text" name="institution" id="institution" placeholder="Ex: XP, BTG, Binance" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+              <label for="institution" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Instituição Financeira / Corretora <span class="text-red-500">*</span></label>
+              <input type="text" name="institution" id="institution" placeholder="Ex: XP, BTG, Binance" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
             </div>
             <div class="mb-4">
-              <label for="account_identifier" class="block text-sm font-medium text-gray-700 mb-1">Número da Conta / Identificador (Opcional)</label>
-              <input type="text" name="account_identifier" id="account_identifier" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <label for="account_identifier" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Número da Conta / Identificador (Opcional)</label>
+              <input type="text" name="account_identifier" id="account_identifier" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
             </div>
              <div class="mb-4">
-              <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">Moeda <span class="text-red-500">*</span></label>
-              <select name="currency" id="currency" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+              <label for="currency" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Moeda <span class="text-red-500">*</span></label>
+              <select name="currency" id="currency" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
                 <option value="BRL">BRL (Real Brasileiro)</option>
                 <option value="USD">USD (Dólar Americano)</option>
                 <option value="EUR">EUR (Euro)</option>
               </select>
             </div>
             <div class="mb-4">
-              <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status <span class="text-red-500">*</span></label>
-              <select name="status" id="status" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+              <label for="status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status <span class="text-red-500">*</span></label>
+              <select name="status" id="status" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
                 <option value="Ativo">Ativo</option>
                 <option value="Vendido/Resgatado">Vendido/Resgatado</option>
                 <option value="Vencido">Vencido</option>
               </select>
             </div>
              <div class="mb-4">
-                <label for="risk_level" class="block text-sm font-medium text-gray-700 mb-1">Nível de Risco (Opcional)</label>
-                <select name="risk_level" id="risk_level" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="risk_level" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nível de Risco (Opcional)</label>
+                <select name="risk_level" id="risk_level" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
                     <option value="">Selecione</option>
                     <option value="Baixo">Baixo</option>
                     <option value="Médio">Médio</option>
@@ -794,50 +963,50 @@
                 </select>
             </div>
             <div class="mb-4 md:col-span-2">
-                <label for="objective" class="block text-sm font-medium text-gray-700 mb-1">Objetivo / Estratégia (Opcional)</label>
-                <textarea name="objective" id="objective" rows="2" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                <label for="objective" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Objetivo / Estratégia (Opcional)</label>
+                <textarea name="objective" id="objective" rows="2" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors"></textarea>
             </div>
             <div class="mb-4 md:col-span-2">
-                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Observações (Opcional)</label>
-                <textarea name="notes" id="notes" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observações (Opcional)</label>
+                <textarea name="notes" id="notes" rows="3" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors"></textarea>
             </div>
           </div>
 
-          <h3 class="text-lg font-semibold mb-3 mt-4 pt-4 border-t text-gray-700">Detalhes da Quantidade e Valor (Inicial)</h3>
+          <h3 class="text-lg font-semibold mb-3 mt-4 pt-4 border-t text-slate-800 dark:text-slate-200">Detalhes da Quantidade e Valor (Inicial)</h3>
           <p class="text-xs text-gray-500 mb-3">Para o primeiro registro do investimento. Transações subsequentes (compras, vendas, proventos) são adicionadas separadamente.</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
             <div class="mb-4">
-              <label for="initial_acquisition_date" class="block text-sm font-medium text-gray-700 mb-1">Data da Aquisição Inicial <span class="text-red-500">*</span></label>
-              <input type="date" name="initial_acquisition_date" id="initial_acquisition_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+              <label for="initial_acquisition_date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data da Aquisição Inicial <span class="text-red-500">*</span></label>
+              <input type="date" name="initial_acquisition_date" id="initial_acquisition_date" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
             </div>
             <div class="mb-4">
-              <label for="initial_quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantidade Inicial <span class="text-red-500">*</span></label>
-              <input type="number" step="any" name="initial_quantity" id="initial_quantity" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+              <label for="initial_quantity" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantidade Inicial <span class="text-red-500">*</span></label>
+              <input type="number" step="any" name="initial_quantity" id="initial_quantity" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
             </div>
             <div class="mb-4">
-              <label for="initial_acquisition_price" class="block text-sm font-medium text-gray-700 mb-1">Preço de Aquisição Unitário Inicial <span class="text-red-500">*</span></label>
-              <input type="number" step="any" name="initial_acquisition_price" id="initial_acquisition_price" placeholder="Preço por unidade/cota" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+              <label for="initial_acquisition_price" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Preço de Aquisição Unitário Inicial <span class="text-red-500">*</span></label>
+              <input type="number" step="any" name="initial_acquisition_price" id="initial_acquisition_price" placeholder="Preço por unidade/cota" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
             </div>
             <div class="mb-4">
-              <label for="initial_fees_paid" class="block text-sm font-medium text-gray-700 mb-1">Taxas Pagas na Aquisição Inicial (Opcional)</label>
-              <input type="number" step="any" name="initial_fees_paid" id="initial_fees_paid" placeholder="Total de taxas" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <label for="initial_fees_paid" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Taxas Pagas na Aquisição Inicial (Opcional)</label>
+              <input type="number" step="any" name="initial_fees_paid" id="initial_fees_paid" placeholder="Total de taxas" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
             </div>
           </div>
 
           <!-- Detalhes Específicos do Tipo (Dynamically Shown) -->
           <div id="type-specific-fields-container" class="mt-4 pt-4 border-t">
-            <h3 class="text-lg font-semibold mb-1 text-gray-700">Detalhes Específicos do Tipo</h3>
+            <h3 class="text-lg font-semibold mb-1 text-slate-800 dark:text-slate-200">Detalhes Específicos do Tipo</h3>
             <p class="text-xs text-gray-500 mb-3">Campos adicionais baseados no tipo de investimento selecionado.</p>
 
             <div id="rf-specific-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-6">
               <h4 class="md:col-span-2 text-md font-medium mb-2 text-gray-600">Renda Fixa / Poupança</h4>
               <div class="mb-4">
-                <label for="maturity_date" class="block text-sm font-medium text-gray-700 mb-1">Data de Vencimento (Opcional)</label>
-                <input type="date" name="maturity_date" id="maturity_date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="maturity_date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data de Vencimento (Opcional)</label>
+                <input type="date" name="maturity_date" id="maturity_date" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
               <div class="mb-4">
-                <label for="interest_rate_type" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Rentabilidade (Opcional)</label>
-                <select name="interest_rate_type" id="interest_rate_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="interest_rate_type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Rentabilidade (Opcional)</label>
+                <select name="interest_rate_type" id="interest_rate_type" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
                     <option value="">Selecione</option>
                     <option value="Pré-fixado">Pré-fixado</option>
                     <option value="Pós-fixado Indexador">Pós-fixado (Indexador)</option>
@@ -846,16 +1015,16 @@
                 </select>
               </div>
               <div class="mb-4">
-                <label for="contracted_rate_percentage" class="block text-sm font-medium text-gray-700 mb-1">Taxa Contratada (%) (Opcional)</label>
-                <input type="number" step="any" name="contracted_rate_percentage" id="contracted_rate_percentage" placeholder="Ex: 10.5 para 10.5%" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="contracted_rate_percentage" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Taxa Contratada (%) (Opcional)</label>
+                <input type="number" step="any" name="contracted_rate_percentage" id="contracted_rate_percentage" placeholder="Ex: 10.5 para 10.5%" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
                <div class="mb-4">
-                <label for="indexer" class="block text-sm font-medium text-gray-700 mb-1">Indexador (Opcional)</label>
-                <input type="text" name="indexer" id="indexer" placeholder="Ex: CDI, IPCA, Selic" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="indexer" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Indexador (Opcional)</label>
+                <input type="text" name="indexer" id="indexer" placeholder="Ex: CDI, IPCA, Selic" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
               <div class="mb-4">
-                <label for="taxation_type" class="block text-sm font-medium text-gray-700 mb-1">Tributação (Opcional)</label>
-                <select name="taxation_type" id="taxation_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="taxation_type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tributação (Opcional)</label>
+                <select name="taxation_type" id="taxation_type" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
                     <option value="">Selecione</option>
                     <option value="Regressiva">IR Regressivo</option>
                     <option value="Isento">Isento de IR</option>
@@ -864,63 +1033,63 @@
               </div>
               <div class="mb-4 flex items-center">
                 <input type="checkbox" name="is_fgc_covered" id="is_fgc_covered" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                <label for="is_fgc_covered" class="ml-2 block text-sm text-gray-900">Coberto pelo FGC? (Opcional)</label>
+                <label for="is_fgc_covered" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Coberto pelo FGC? (Opcional)</label>
               </div>
             </div>
 
             <div id="acoes-specific-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-6">
               <h4 class="md:col-span-2 text-md font-medium mb-2 text-gray-600">Ações</h4>
               <div class="mb-4">
-                <label for="stock_exchange" class="block text-sm font-medium text-gray-700 mb-1">Bolsa de Valores (Opcional)</label>
-                <input type="text" name="stock_exchange" id="stock_exchange" placeholder="Ex: B3, NASDAQ" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="stock_exchange" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Bolsa de Valores (Opcional)</label>
+                <input type="text" name="stock_exchange" id="stock_exchange" placeholder="Ex: B3, NASDAQ" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
               <div class="mb-4">
-                <label for="sector" class="block text-sm font-medium text-gray-700 mb-1">Setor (Opcional)</label>
-                <input type="text" name="sector" id="sector" placeholder="Ex: Tecnologia, Varejo" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="sector" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Setor (Opcional)</label>
+                <input type="text" name="sector" id="sector" placeholder="Ex: Tecnologia, Varejo" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
               <div class="mb-4">
-                <label for="cnpj_acao" class="block text-sm font-medium text-gray-700 mb-1">CNPJ da Empresa (Opcional)</label>
-                <input type="text" name="cnpj_acao" id="cnpj_acao" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="cnpj_acao" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CNPJ da Empresa (Opcional)</label>
+                <input type="text" name="cnpj_acao" id="cnpj_acao" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
             </div>
 
             <div id="fundos-specific-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-6">
               <h4 class="md:col-span-2 text-md font-medium mb-2 text-gray-600">Fundos (FII, ETF, FI) / Previdência</h4>
               <div class="mb-4">
-                <label for="fund_cnpj" class="block text-sm font-medium text-gray-700 mb-1">CNPJ do Fundo (Opcional)</label>
-                <input type="text" name="fund_cnpj" id="fund_cnpj" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="fund_cnpj" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CNPJ do Fundo (Opcional)</label>
+                <input type="text" name="fund_cnpj" id="fund_cnpj" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
               <div class="mb-4">
-                <label for="administrator_fee_percentage" class="block text-sm font-medium text-gray-700 mb-1">Taxa de Administração (%) (Opcional)</label>
-                <input type="number" step="any" name="administrator_fee_percentage" id="administrator_fee_percentage" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="administrator_fee_percentage" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Taxa de Administração (%) (Opcional)</label>
+                <input type="number" step="any" name="administrator_fee_percentage" id="administrator_fee_percentage" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
               <div class="mb-4">
-                <label for="performance_fee_percentage" class="block text-sm font-medium text-gray-700 mb-1">Taxa de Performance (%) (Opcional)</label>
-                <input type="text" name="performance_fee_percentage" id="performance_fee_percentage" placeholder="Ex: 20% sobre o que exceder o CDI" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="performance_fee_percentage" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Taxa de Performance (%) (Opcional)</label>
+                <input type="text" name="performance_fee_percentage" id="performance_fee_percentage" placeholder="Ex: 20% sobre o que exceder o CDI" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
               <div class="mb-4">
-                <label for="benchmark" class="block text-sm font-medium text-gray-700 mb-1">Benchmark (Opcional)</label>
-                <input type="text" name="benchmark" id="benchmark" placeholder="Ex: IBOVESPA, CDI" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="benchmark" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Benchmark (Opcional)</label>
+                <input type="text" name="benchmark" id="benchmark" placeholder="Ex: IBOVESPA, CDI" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
               </div>
             </div>
 
             <div id="crypto-specific-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-6">
                 <h4 class="md:col-span-2 text-md font-medium mb-2 text-gray-600">Moedas Digitais</h4>
                 <div class="mb-4">
-                    <label for="crypto_asset_code" class="block text-sm font-medium text-gray-700 mb-1">Código do Ativo Digital (Opcional)</label>
-                    <input type="text" name="crypto_asset_code" id="crypto_asset_code" placeholder="Ex: BTC, ETH, ADA" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <label for="crypto_asset_code" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Código do Ativo Digital (Opcional)</label>
+                    <input type="text" name="crypto_asset_code" id="crypto_asset_code" placeholder="Ex: BTC, ETH, ADA" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
                 </div>
                 <div class="mb-4">
-                    <label for="exchange_platform_wallet" class="block text-sm font-medium text-gray-700 mb-1">Exchange / Plataforma / Carteira (Opcional)</label>
-                    <input type="text" name="exchange_platform_wallet" id="exchange_platform_wallet" placeholder="Ex: Binance, Ledger Nano S" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <label for="exchange_platform_wallet" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Exchange / Plataforma / Carteira (Opcional)</label>
+                    <input type="text" name="exchange_platform_wallet" id="exchange_platform_wallet" placeholder="Ex: Binance, Ledger Nano S" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors">
                 </div>
             </div>
           </div>
 
           <!-- Form Actions -->
           <div class="flex justify-end pt-6 mt-6 border-t">
-            <button type="button" id="modal-cancel-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 mr-3 shadow-sm">Cancelar</button>
-            <button type="submit" id="modal-save-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow-sm">Salvar Investimento</button>
+            <button type="button" id="modal-cancel-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-colors mr-3 shadow-sm">Cancelar</button>
+            <button type="submit" id="modal-save-btn" class="bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-colors shadow-md">Salvar Investimento</button>
           </div>
         </form>
       </div>
