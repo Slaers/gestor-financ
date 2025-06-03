@@ -541,15 +541,15 @@
                     showScreen('loading');
                     const batch = writeBatch(db);
                     const householdDocRef = doc(db, "households", activeHouseholdId);
-                    const userToRemoveDocRef = doc(db, "users", memberIdToRemove);
+                    // const userToRemoveDocRef = doc(db, "users", memberIdToRemove); // Line removed/commented
 
                     try {
                         batch.update(householdDocRef, {
                             [`members.${memberIdToRemove}`]: deleteField()
                         });
-                        batch.update(userToRemoveDocRef, {
-                            activeHouseholdId: null
-                        });
+                        // batch.update(userToRemoveDocRef, { // Line removed/commented
+                        //     activeHouseholdId: null
+                        // });
                         await batch.commit();
 
                         // UI will be updated by onSnapshot, but a direct call can make it feel faster
@@ -1145,8 +1145,8 @@
                         });
                     }
 
-                    const isOwner = userId === householdData.ownerId; // This line is now duplicated, ensure it's defined if needed below or remove if not.
-                    if(inviteMemberForm) inviteMemberForm.classList.toggle('hidden', !isOwner);
+                    // const isOwner = userId === householdData.ownerId; // Redundant, isOwner is defined above if householdData.members exists
+                    if(inviteMemberForm) inviteMemberForm.classList.toggle('hidden', !(userId === householdData.ownerId)); // Use direct check or ensure isOwner is defined earlier for all cases
 
                     if (leaveFamilyBtn) {
                         const isMember = householdData.members && householdData.members[userId];
@@ -1157,7 +1157,11 @@
                         }
                     }
                     if (disbandFamilyBtn) {
-                        if (isOwner) {
+                        // isOwner should be defined from the check within `if (householdData.members)` block,
+                        // or we ensure it's defined if householdData.members might be empty but householdData itself is not.
+                        // For safety, we can re-evaluate or ensure it's always available if householdData is true.
+                        const isOwnerForButtons = userId === householdData.ownerId;
+                        if (isOwnerForButtons) {
                             disbandFamilyBtn.classList.remove('hidden');
                         } else {
                             disbandFamilyBtn.classList.add('hidden');
