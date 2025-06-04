@@ -52,7 +52,7 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
             </button>
             <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 ml-2 lg:ml-0">Meus Lançamentos</h1>
-            <a href="/home" class="text-sm bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.03]">
+            <a href="/" class="text-sm bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.03]">
                 Voltar ao Painel
             </a>
         </div>
@@ -117,9 +117,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            populateLancamentosMenus();
-            const transactionsListContainer = document.getElementById('transactions-list-container');
-
             const firebaseConfigProvided = {
                 apiKey: "AIzaSyBEE49m18ujHj2MneCZKVoyuKgrV5okCYA",
                 authDomain: "gestao-de-lancamentos.firebaseapp.com",
@@ -133,21 +130,30 @@
             const app = initializeApp(firebaseConfigProvided);
             const db = getFirestore(app);
             let authInstance;
-
             try {
-                authInstance = initializeAuth(app, {
-                    persistence: indexedDBLocalPersistence
-                });
+                authInstance = initializeAuth(app, { persistence: indexedDBLocalPersistence });
             } catch (e) {
                 console.error("Erro ao inicializar Firebase Auth com persistência:", e);
-                transactionsListContainer.innerHTML = '<p class="text-red-500">Erro ao inicializar autenticação. Verifique as configurações do navegador.</p>';
+                const transactionsListContainer = document.getElementById('transactions-list-container');
+                if (transactionsListContainer) {
+                    transactionsListContainer.innerHTML = '<p class="text-red-500">Erro ao inicializar autenticação. Verifique as configurações do navegador.</p>';
+                }
                 return;
             }
 
+            const transactionsListContainer = document.getElementById('transactions-list-container');
+
             onAuthStateChanged(authInstance, async (user) => {
-                if (user) {
+                if (!user) {
+                    console.log('User not authenticated on lancamentos.html, redirecting to /login.');
+                    window.location.href = '/login'; // Corrected to /login
+                } else {
+                    // User is signed in.
+                    console.log('User authenticated on lancamentos.html, proceeding with page load.');
+
+                    populateLancamentosMenus(); // Populate menus first
+
                     const userId = user.uid;
-                    // Fetch user's activeHouseholdId
                     const userDocRef = doc(db, "users", userId);
                     try {
                         const userDocSnap = await getDoc(userDocRef);
@@ -155,31 +161,23 @@
                             const activeHouseholdId = userDocSnap.data().activeHouseholdId;
                             await fetchAndDisplayTransactions(userId, activeHouseholdId);
                         } else {
-                            transactionsListContainer.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Você precisa configurar ou entrar em uma família/grupo no <a href="../index.html" class="text-sky-500 hover:underline">painel principal</a> para ver seus lançamentos.</p>';
+                            transactionsListContainer.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Você precisa configurar ou entrar em uma família/grupo no <a href="/home" class="text-sky-500 hover:underline">painel principal</a> para ver seus lançamentos.</p>';
                         }
                     } catch (error) {
                         console.error("Erro ao buscar dados do usuário:", error);
                         transactionsListContainer.innerHTML = '<p class="text-red-500">Erro ao buscar dados do usuário. Tente novamente mais tarde.</p>';
                     }
-                } else {
-                    transactionsListContainer.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Você precisa estar logado para ver seus lançamentos. <a href="../index.html" class="text-sky-500 hover:underline">Faça login aqui</a>.</p>';
-                    // Consider redirecting: window.location.href = '../index.html';
                 }
             });
 
+            // Helper functions (fetchAndDisplayTransactions, renderTransactions, formatCurrency)
+            // Ensure they are defined here or correctly imported/scoped
             async function fetchAndDisplayTransactions(currentUserId, householdId) {
                 transactionsListContainer.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Carregando lançamentos...</p>';
 
                 try {
-                    // Query transactions from the household's subcollection, ordered by date
                     const transactionsRef = collection(db, `households/${householdId}/transactions`);
-                    // The problem description asks to filter by userId, but in the existing structure,
-                    // transactions are within a household and implicitly belong to users of that household.
-                    // If transactions needed to be filtered by the *creator* within the household:
-                    // const q = query(transactionsRef, where("createdByUserId", "==", currentUserId), orderBy("date", "desc"));
-                    // For now, fetching all transactions from the active household, ordered by date.
                     const q = query(transactionsRef, orderBy("date", "desc"));
-
                     const querySnapshot = await getDocs(q);
                     const transactions = [];
                     querySnapshot.forEach(doc => {
@@ -190,9 +188,7 @@
                         transactionsListContainer.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Nenhum lançamento encontrado para esta família/grupo.</p>';
                         return;
                     }
-
                     renderTransactions(transactions);
-
                 } catch (error) {
                     console.error("Erro ao buscar transações: ", error);
                     transactionsListContainer.innerHTML = '<p class="text-red-500">Erro ao buscar lançamentos. Tente novamente mais tarde.</p>';

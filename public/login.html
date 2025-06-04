@@ -51,34 +51,41 @@
   </head>
   <body>
     <nav class="bg-gray-800 text-white p-4">
-      <div class="container mx-auto flex justify-between">
-        <a href="/home" class="font-bold">Gestão de Lançamentos</a>
-        <div>
-          <a href="/investimentos.html" class="px-3 py-2 rounded hover:bg-gray-700">Investimentos</a>
-          <!-- Add other links here if needed -->
-        </div>
+      <div class="container mx-auto flex justify-center"> <!-- Centered title -->
+        <span class="font-bold">Gestão de Lançamentos - Login</span>
       </div>
     </nav>
-    <div id="message" class="text-center"> <!-- Added text-center for button alignment -->
-      <h1>Ações Rápidas</h1>
-      <p>Selecione uma das opções abaixo:</p>
-
-      <div class="flex flex-col space-y-4 my-6"> <!-- Flex container for buttons -->
-        <a href="/lancamentos?action=new" id="btn-novo" class="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out">
-          Novo Lançamento
-        </a>
-        <a href="/home?action=manageFamily" id="btn-familia" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out">
-          Família
-        </a>
-        <button id="btn-sair" class="bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out">
-          Sair
-        </button>
-      </div>
+    <div id="message">
+      <h2>Login Required</h2>
+      <h1>Welcome to Gestão de Lançamentos</h1>
+      <p>Please sign in to continue. If you don't have an account, the system will guide you through the setup after your first login attempt with a Google account (or other configured provider).</p>
+      <!-- Login buttons/Firebase UI Auth will be handled by Firebase initialisation -->
+      <p><em>Login will be initiated by Firebase Auth.</em></p>
     </div>
     <p id="load">Firebase SDK Loading&hellip;</p>
 
     <script>
       document.addEventListener('DOMContentLoaded', function() {
+        // Firebase Auth check and redirect
+        firebase.auth().onAuthStateChanged(user => {
+          if (user) {
+            // User is signed in, redirect to /home.
+            // Add a small delay to allow any pending operations or UI updates.
+            setTimeout(() => {
+              console.log('User authenticated on login page, redirecting to main app (/).');
+              window.location.href = '/'; // Corrected from /home
+            }, 100);
+          } else {
+            // User is signed out.
+            // The rest of this page (login UI) will be displayed.
+            // You can optionally hide loading indicators here if they were shown unconditionally.
+            const loadEl = document.querySelector('#load');
+            if (loadEl) {
+              //loadEl.textContent = 'Please sign in.'; // Or keep existing message
+            }
+          }
+        });
+
         const loadEl = document.querySelector('#load');
         // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
         // // The Firebase SDK is initialized and available here!
@@ -109,23 +116,6 @@
             'performance',
           ].filter(feature => typeof app[feature] === 'function');
           loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-
-          // Logout button functionality
-          const logoutButton = document.getElementById('btn-sair');
-          if (logoutButton) {
-            logoutButton.addEventListener('click', () => {
-              firebase.auth().signOut().then(() => {
-                // Sign-out successful.
-                console.log('User signed out.');
-                window.location.href = '/'; // Redirect to login page
-              }).catch((error) => {
-                // An error happened.
-                console.error('Sign out error:', error);
-                alert('Erro ao sair: ' + error.message);
-              });
-            });
-          }
-
         } catch (e) {
           console.error(e);
           loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
