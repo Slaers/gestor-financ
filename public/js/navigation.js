@@ -3,22 +3,25 @@
 export const navigationLinks = [
   {
     text: 'Home',
-    href: '/', // Standardized in step 1
-    icon: null, // Placeholder for potential future icon class or SVG
+    href: '/home', // Updated: Root is now /home
+    icon: null,
   },
   {
     text: 'Investimentos',
-    href: '/public/investimentos.html',
+    href: '/investimentos', // Updated: Path as per firebase.json rewrite
     icon: null,
   },
   {
     text: 'Lançamentos',
-    href: '/public/lancamentos.html',
+    href: '/lancamentos', // Updated: Path as per firebase.json rewrite
     icon: null,
   },
   {
     text: 'Família',
-    href: '/index.html?action=manageFamily', // Points to main app, which handles this action
+    // Updated: Points to /home, action to be handled by home.html's logic if needed
+    // Or, if there's a dedicated family page, it would be e.g., '/familia'
+    // For now, consistent with plan: /home?action=manageFamily
+    href: '/home?action=manageFamily',
     icon: null,
   },
   {
@@ -26,25 +29,24 @@ export const navigationLinks = [
     href: '#', // Placeholder, as current settings link is '#'
     icon: null,
   }
+  // No 'Login' link here as per revised thought; logout is handled by a button on /home
 ];
 
-// Function to adjust hrefs for use in sub-pages (e.g., public/investimentos.html)
+// Function to adjust hrefs for use in sub-pages.
+// Given firebase.json rewrites, direct root-relative links should work.
+// This function will now ensure that the hrefs are returned as defined,
+// as the firebase.json rewrites mean the browser should resolve them from the root.
+// The pagePath argument helps in contexts where relative paths from the *file system location*
+// of the HTML file were previously needed, but with rewrites, this is less of a concern.
 export function getNavigationLinks(pagePath = '/') {
+  // pagePath might be like '/public/investimentos.html' or '/public/lancamentos.html' or '/' for index/home.
   return navigationLinks.map(link => {
-    let newHref = link.href;
-    // If the current page is inside '/public/' and the link is to the root or another /public/ page
-    if (pagePath.startsWith('/public/')) {
-      if (link.href === '/') {
-        newHref = '../index.html'; // Go up to root for Home
-      } else if (link.href.startsWith('/public/')) {
-        // Link is to another page within /public, make it relative from current /public page
-        newHref = link.href.substring('/public/'.length);
-      } else if (link.href.startsWith('/index.html?action=')) {
-        // Link is to /index.html?action=... (like Familia)
-        newHref = `../index.html${link.href.substring('/index.html'.length)}`;
-      }
-      // Links like '#' (Configurações) remain unchanged
-    }
-    return { ...link, href: newHref };
+    // With firebase.json rewrites, the hrefs in navigationLinks are root-relative paths
+    // and should work directly.
+    // No complex path adjustments are needed here anymore based on pagePath.
+    // If a link is '#', it remains '#'.
+    // Example: If link.href is '/home', it remains '/home'.
+    // If link.href is '/investimentos', it remains '/investimentos'.
+    return { ...link, href: link.href };
   });
 }
