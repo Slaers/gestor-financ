@@ -59,8 +59,9 @@
     </style>
 </head>
 <body class="font-sans bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-colors duration-300">
-    <nav id="desktop-sidebar-menu" class="hidden lg:flex fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-800 shadow-xl z-40 flex-col space-y-2 p-4 transform -translate-x-full transition-transform duration-300 ease-in-out">
-        <div class="flex justify-end">
+    <nav id="desktop-sidebar-menu" class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-800 shadow-xl z-40 transform -translate-x-full transition-transform duration-300 ease-in-out hidden lg:flex flex-col p-4 space-y-2">
+        <div class="flex justify-between items-center mb-2">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Menu</h2>
             <button id="close-desktop-sidebar-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -70,6 +71,19 @@
         <a href="#" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Lançamentos</a>
         <a href="#" id="desktop-sidebar-family-link" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Família</a>
         <a href="#" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Configurações</a>
+    </nav>
+    <nav id="mobile-overlay-menu" class="fixed inset-0 bg-white dark:bg-slate-800 p-4 z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden flex-col space-y-2 lg:hidden"> {/* Changed z-40 to z-50 */}
+        <div class="flex justify-between items-center mb-2">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Menu</h2>
+            <button id="close-mobile-overlay-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <a href="index.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Home</a>
+        <a href="public/investimentos.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Investimentos</a>
+        <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Lançamentos</a>
+        <a href="#" id="mobile-overlay-family-link" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Família</a>
+        <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Configurações</a>
     </nav>
     <div id="loading-overlay" class="fixed inset-0 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-center z-[9999] hidden">
         <div class="loading-spinner"></div>
@@ -144,21 +158,9 @@
 
 
     <div id="app-content" class="hidden container mx-auto p-4 sm:p-6 md:p-8">
-        <header class="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4 lg:gap-6">
-            <nav id="mobile-menu" class="hidden fixed inset-0 bg-white dark:bg-slate-800 p-4 z-30 flex-col space-y-2 transition-transform duration-300 ease-in-out transform translate-x-full lg:hidden">
-                <div class="flex justify-end">
-                    <button id="close-mobile-menu-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                <a href="index.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Home</a>
-                <a href="public/investimentos.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Investimentos</a>
-                <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Lançamentos</a>
-                <a href="#" id="mobile-menu-family-link" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Família</a>
-                <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Configurações</a>
-            </nav>
+        <header class="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4 lg:gap-6 sticky top-0 bg-white dark:bg-slate-800 z-30 py-4"> {/* Added sticky, z-index, bg, and py-4 for padding */}
             <div class="flex items-center justify-center lg:justify-start flex-grow lg:flex-grow-0 gap-2">
-                <button id="hamburger-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md z-50">
+                <button id="universal-hamburger-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md z-50">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
                 <div class="text-center lg:text-left">
@@ -168,7 +170,7 @@
             </div>
             <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:flex-wrap items-center justify-center lg:justify-end gap-2 sm:gap-3 w-full lg:w-auto">
                 <div id="user-info" class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 hidden order-first lg:order-none w-full lg:w-auto text-center lg:text-right mb-2 sm:mb-0 lg:mr-2"></div>
-            <div class="hidden lg:flex items-center gap-2 sm:gap-3">
+            <div class="hidden lg:flex items-center gap-2 sm:gap-3"> {/* Reverted to hidden lg:flex for responsiveness */}
                     <select id="month-filter" class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 py-2 px-3 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none w-full sm:w-auto sm:flex-shrink-0">
                     </select>
                     <button id="add-transaction-btn" class="bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-slate-600 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm w-full sm:w-auto sm:flex-shrink-0">
@@ -184,7 +186,7 @@
                 </button>
             </div>
         </header>
-        <main>
+        <main class="pt-20"> {/* Added pt-20 for sticky header offset */}
             <section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Receitas Totais</h2><p id="total-income" class="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">R$ 0,00</p></div>
                 <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Despesas Totais</h2><p id="total-expense" class="text-2xl sm:text-3xl font-bold text-rose-600 dark:text-rose-400 mt-2">R$ 0,00</p></div>
@@ -350,15 +352,15 @@
         // Firebase and DOM Elements (condensed for brevity in thought process)
         // ... (all the variable declarations from firebaseConfigProvided down to transactionDateInput)
 
-        // Menu elements
-        const hamburgerButton = document.getElementById('hamburger-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const closeMobileMenuButton = document.getElementById('close-mobile-menu-button');
-        const mobileMenuFamilyLink = document.getElementById('mobile-menu-family-link');
-
+        // Universal Menu Element Selectors
+        const universalHamburgerButton = document.getElementById('universal-hamburger-button');
         const desktopSidebarMenu = document.getElementById('desktop-sidebar-menu');
         const closeDesktopSidebarButton = document.getElementById('close-desktop-sidebar-button');
         const desktopSidebarFamilyLink = document.getElementById('desktop-sidebar-family-link');
+        const mobileOverlayMenu = document.getElementById('mobile-overlay-menu');
+        const closeMobileOverlayButton = document.getElementById('close-mobile-overlay-button');
+        const mobileOverlayFamilyLink = document.getElementById('mobile-overlay-family-link');
+        const manageFamilyBtn = document.getElementById('manage-family-btn'); // Used by menu "Família" links
 
         let pendingManageFamilyAction = false; // Flag for deferred action
 
@@ -1464,83 +1466,103 @@
             });
 
             // --- Menu Logic ---
-            const manageFamilyBtnForMenu = document.getElementById('manage-family-btn');
 
-            function toggleMenu() {
-                if (mobileMenu) {
-                    const isHidden = mobileMenu.classList.contains('hidden');
+            function toggleMobileOverlayMenu() {
+                if (mobileOverlayMenu) {
+                    const isHidden = mobileOverlayMenu.classList.contains('hidden');
                     if (isHidden) {
-                        mobileMenu.classList.remove('hidden', 'translate-x-full');
-                        mobileMenu.classList.add('translate-x-0');
+                        mobileOverlayMenu.classList.remove('hidden');
+                        requestAnimationFrame(() => {
+                            mobileOverlayMenu.classList.remove('translate-x-full');
+                            mobileOverlayMenu.classList.add('translate-x-0');
+                        });
                     } else {
-                        mobileMenu.classList.add('translate-x-full');
-                        setTimeout(() => {
-                            mobileMenu.classList.add('hidden');
-                            mobileMenu.classList.remove('translate-x-0');
-                        }, 300); // Match animation duration
+                        mobileOverlayMenu.classList.remove('translate-x-0');
+                        mobileOverlayMenu.classList.add('translate-x-full');
+                        mobileOverlayMenu.addEventListener('transitionend', () => {
+                            mobileOverlayMenu.classList.add('hidden');
+                        }, { once: true });
                     }
                 }
             }
 
-            function toggleDesktopSidebar() {
+            function toggleDesktopSidebarMenu() {
                 if (desktopSidebarMenu) {
                     const isHidden = desktopSidebarMenu.classList.contains('hidden');
                     if (isHidden) {
-                        desktopSidebarMenu.classList.remove('hidden', '-translate-x-full');
-                        desktopSidebarMenu.classList.add('translate-x-0');
+                        desktopSidebarMenu.classList.remove('hidden');
+                        requestAnimationFrame(() => {
+                            desktopSidebarMenu.classList.remove('-translate-x-full');
+                            desktopSidebarMenu.classList.add('translate-x-0');
+                        });
                     } else {
+                        desktopSidebarMenu.classList.remove('translate-x-0');
                         desktopSidebarMenu.classList.add('-translate-x-full');
-                        setTimeout(() => {
+                        desktopSidebarMenu.addEventListener('transitionend', () => {
                             desktopSidebarMenu.classList.add('hidden');
-                             desktopSidebarMenu.classList.remove('translate-x-0');
-                        }, 300); // Match animation duration
+                        }, { once: true });
                     }
                 }
             }
 
-            if (hamburgerButton) {
-                hamburgerButton.addEventListener('click', function() {
+            if (universalHamburgerButton) {
+                universalHamburgerButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
                     if (window.matchMedia('(min-width: 1024px)').matches) { // lg breakpoint
-                        toggleDesktopSidebar();
+                        if (mobileOverlayMenu && !mobileOverlayMenu.classList.contains('hidden') && !mobileOverlayMenu.classList.contains('translate-x-full')) {
+                            toggleMobileOverlayMenu();
+                        }
+                        toggleDesktopSidebarMenu();
                     } else {
-                        toggleMenu();
+                        if (desktopSidebarMenu && !desktopSidebarMenu.classList.contains('hidden') && !desktopSidebarMenu.classList.contains('-translate-x-full')) {
+                            toggleDesktopSidebarMenu();
+                        }
+                        toggleMobileOverlayMenu();
                     }
                 });
             }
 
-            if (closeMobileMenuButton) closeMobileMenuButton.addEventListener('click', toggleMenu);
-            if (closeDesktopSidebarButton) closeDesktopSidebarButton.addEventListener('click', toggleDesktopSidebar);
-
-            if (mobileMenuFamilyLink && manageFamilyBtnForMenu) {
-                mobileMenuFamilyLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    toggleMenu(); // Close mobile menu
-                    // Wait for menu to close before triggering click, if animations interfere
-                    setTimeout(() => manageFamilyBtnForMenu.click(), 50);
+            if (closeDesktopSidebarButton) {
+                closeDesktopSidebarButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    toggleDesktopSidebarMenu();
+                });
+            }
+            if (closeMobileOverlayButton) {
+                closeMobileOverlayButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    toggleMobileOverlayMenu();
                 });
             }
 
-            if (desktopSidebarFamilyLink && manageFamilyBtnForMenu) {
-                desktopSidebarFamilyLink.addEventListener('click', function(e) {
+            if (desktopSidebarFamilyLink && manageFamilyBtn) {
+                desktopSidebarFamilyLink.addEventListener('click', (e) => {
                     e.preventDefault();
-                    toggleDesktopSidebar(); // Close desktop sidebar
-                    // Wait for menu to close before triggering click
-                    setTimeout(() => manageFamilyBtnForMenu.click(), 50);
+                    if (desktopSidebarMenu && !desktopSidebarMenu.classList.contains('hidden') && !desktopSidebarMenu.classList.contains('-translate-x-full')) {
+                        toggleDesktopSidebarMenu();
+                    }
+                    setTimeout(() => manageFamilyBtn.click(), 50);
+                });
+            }
+            if (mobileOverlayFamilyLink && manageFamilyBtn) {
+                mobileOverlayFamilyLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (mobileOverlayMenu && !mobileOverlayMenu.classList.contains('hidden') && !mobileOverlayMenu.classList.contains('translate-x-full')) {
+                        toggleMobileOverlayMenu();
+                    }
+                    setTimeout(() => manageFamilyBtn.click(), 50);
                 });
             }
 
-            // Click outside to close desktop sidebar
-            document.addEventListener('click', function(event) {
-                if (window.matchMedia('(min-width: 1024px)').matches && desktopSidebarMenu && !desktopSidebarMenu.classList.contains('hidden')) {
-                    const isClickInsideButton = hamburgerButton && hamburgerButton.contains(event.target);
-                    const isClickInsideMenu = desktopSidebarMenu.contains(event.target);
-
-                    if (!isClickInsideMenu && !isClickInsideButton) {
-                        toggleDesktopSidebar();
+            document.addEventListener('click', (event) => {
+                if (window.matchMedia('(min-width: 1024px)').matches && desktopSidebarMenu && !desktopSidebarMenu.classList.contains('hidden') && !desktopSidebarMenu.classList.contains('-translate-x-full')) {
+                    if (universalHamburgerButton && !universalHamburgerButton.contains(event.target) && !desktopSidebarMenu.contains(event.target)) {
+                        toggleDesktopSidebarMenu();
                     }
                 }
             });
 
+            // --- End of Menu Logic ---
 
             onAuthStateChanged(authInstance, async (user) => {
                 console.log("onAuthStateChanged disparado. User:", user ? user.uid : 'null');
