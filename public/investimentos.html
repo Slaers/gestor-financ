@@ -29,11 +29,6 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <a href="../index.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Home</a>
-        <a href="investimentos.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Investimentos</a>
-        <a href="lancamentos.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Lançamentos</a>
-        <a href="../index.html?action=manageFamily" id="desktop-sidebar-family-link-investimentos" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Família</a>
-        <a href="#" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Configurações</a>
     </nav>
     <nav id="mobile-overlay-menu-investimentos" class="fixed inset-0 bg-white dark:bg-slate-800 p-4 z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden flex-col space-y-2 lg:hidden">
         <div class="flex justify-between items-center mb-2">
@@ -42,11 +37,6 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <a href="../index.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Home</a>
-        <a href="investimentos.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Investimentos</a>
-        <a href="lancamentos.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Lançamentos</a>
-        <a href="../index.html?action=manageFamily" id="mobile-overlay-family-link-investimentos" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Família</a>
-        <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Configurações</a>
     </nav>
 
     <header class="bg-white dark:bg-slate-800 shadow-md sticky top-0 z-30 py-4"> <!-- Added sticky, z-index, bg, and py-4 -->
@@ -205,9 +195,58 @@
     </main>
     <script src="js/investment-logic.js"></script>
     <script src="js/household-investment-manager.js"></script>
-    <script>
+    <script type="module">
+        // This is the main script module for investment page logic
+        // It will also include the menu population logic at the end of its DOMContentLoaded.
+        import { getNavigationLinks } from './js/navigation.js';
+
+        function populateInvestimentosMenus() {
+            const desktopMenuContainer = document.getElementById('desktop-sidebar-menu-investimentos');
+            const mobileMenuContainer = document.getElementById('mobile-overlay-menu-investimentos');
+            const currentPagePath = 'investimentos.html';
+
+            if (desktopMenuContainer) {
+                Array.from(desktopMenuContainer.children).forEach(child => {
+                    if (child.tagName === 'A') desktopMenuContainer.removeChild(child);
+                });
+            }
+            if (mobileMenuContainer) {
+                Array.from(mobileMenuContainer.children).forEach(child => {
+                    if (child.tagName === 'A') mobileMenuContainer.removeChild(child);
+                });
+            }
+
+            const links = getNavigationLinks('/public/investimentos.html');
+
+            links.forEach(linkInfo => {
+                if (desktopMenuContainer) {
+                    const aDesktop = document.createElement('a');
+                    aDesktop.href = linkInfo.href;
+                    aDesktop.textContent = linkInfo.text;
+                    aDesktop.className = 'block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md';
+                    if (linkInfo.href.endsWith(currentPagePath)) {
+                        // Assuming active classes are similar to lancamentos.html
+                        aDesktop.classList.add('bg-slate-100', 'dark:bg-slate-700');
+                    }
+                    desktopMenuContainer.appendChild(aDesktop);
+                }
+
+                if (mobileMenuContainer) {
+                    const aMobile = document.createElement('a');
+                    aMobile.href = linkInfo.href;
+                    aMobile.textContent = linkInfo.text;
+                    aMobile.className = 'block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md';
+                    if (linkInfo.href.endsWith(currentPagePath)) {
+                        aMobile.classList.add('bg-sky-50', 'dark:bg-sky-700');
+                    }
+                    mobileMenuContainer.appendChild(aMobile);
+                }
+            });
+        }
+
         // Existing script content for investment page logic
         window.addEventListener('DOMContentLoaded', () => {
+            populateInvestimentosMenus(); // Call menu population here
             // --- Household ID Logic ---
             let currentHouseholdId = null;
 

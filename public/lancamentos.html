@@ -33,11 +33,6 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <a href="../index.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Home</a>
-        <a href="investimentos.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Investimentos</a>
-        <a href="lancamentos.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md bg-slate-100 dark:bg-slate-700">Lançamentos</a>
-        <a href="../index.html?action=manageFamily" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Família</a>
-        <a href="#" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Configurações</a>
     </nav>
 
     <!-- Mobile Overlay Menu -->
@@ -48,11 +43,6 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <a href="../index.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Home</a>
-        <a href="investimentos.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Investimentos</a>
-        <a href="lancamentos.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md bg-sky-50 dark:bg-sky-700">Lançamentos</a>
-        <a href="../index.html?action=manageFamily" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Família</a>
-        <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Configurações</a>
     </nav>
 
     <!-- Header -->
@@ -81,8 +71,53 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, initializeAuth, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, orderBy, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getNavigationLinks } from './js/navigation.js';
+
+        function populateLancamentosMenus() {
+            const desktopMenuContainer = document.getElementById('desktop-sidebar-menu-lancamentos');
+            const mobileMenuContainer = document.getElementById('mobile-overlay-menu-lancamentos');
+            const currentPagePath = 'lancamentos.html'; // Specific for this page
+
+            if (desktopMenuContainer) {
+                Array.from(desktopMenuContainer.children).forEach(child => {
+                    if (child.tagName === 'A') desktopMenuContainer.removeChild(child);
+                });
+            }
+            if (mobileMenuContainer) {
+                Array.from(mobileMenuContainer.children).forEach(child => {
+                    if (child.tagName === 'A') mobileMenuContainer.removeChild(child);
+                });
+            }
+
+            const links = getNavigationLinks('/public/lancamentos.html');
+
+            links.forEach(linkInfo => {
+                if (desktopMenuContainer) {
+                    const aDesktop = document.createElement('a');
+                    aDesktop.href = linkInfo.href;
+                    aDesktop.textContent = linkInfo.text;
+                    aDesktop.className = 'block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md';
+                    if (linkInfo.href.endsWith(currentPagePath)) {
+                        aDesktop.classList.add('bg-slate-100', 'dark:bg-slate-700');
+                    }
+                    desktopMenuContainer.appendChild(aDesktop);
+                }
+
+                if (mobileMenuContainer) {
+                    const aMobile = document.createElement('a');
+                    aMobile.href = linkInfo.href;
+                    aMobile.textContent = linkInfo.text;
+                    aMobile.className = 'block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md';
+                    if (linkInfo.href.endsWith(currentPagePath)) {
+                        aMobile.classList.add('bg-sky-50', 'dark:bg-sky-700');
+                    }
+                    mobileMenuContainer.appendChild(aMobile);
+                }
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
+            populateLancamentosMenus();
             const transactionsListContainer = document.getElementById('transactions-list-container');
 
             const firebaseConfigProvided = {

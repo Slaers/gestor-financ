@@ -66,11 +66,6 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <a href="index.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Home</a>
-        <a href="public/investimentos.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Investimentos</a>
-        <a href="public/lancamentos.html" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Lançamentos</a>
-        <a href="#" id="desktop-sidebar-family-link" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Família</a>
-        <a href="#" class="block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md">Configurações</a>
     </nav>
     <nav id="mobile-overlay-menu" class="fixed inset-0 bg-white dark:bg-slate-800 p-4 z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden flex-col space-y-2 lg:hidden"> {/* Changed z-40 to z-50 */}
         <div class="flex justify-between items-center mb-2">
@@ -79,11 +74,6 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <a href="index.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Home</a>
-        <a href="public/investimentos.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Investimentos</a>
-        <a href="public/lancamentos.html" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Lançamentos</a>
-        <a href="#" id="mobile-overlay-family-link" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Família</a>
-        <a href="#" class="block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md">Configurações</a>
     </nav>
     <div id="loading-overlay" class="fixed inset-0 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-center z-[9999] hidden">
         <div class="loading-spinner"></div>
@@ -348,6 +338,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, initializeAuth, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; 
         import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, setLogLevel, writeBatch, getDoc, updateDoc, arrayUnion, getDocs, where, runTransaction, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
+        import { getNavigationLinks } from './public/js/navigation.js';
 
         // Firebase and DOM Elements (condensed for brevity in thought process)
         // ... (all the variable declarations from firebaseConfigProvided down to transactionDateInput)
@@ -356,15 +347,71 @@
         const universalHamburgerButton = document.getElementById('universal-hamburger-button');
         const desktopSidebarMenu = document.getElementById('desktop-sidebar-menu');
         const closeDesktopSidebarButton = document.getElementById('close-desktop-sidebar-button');
-        const desktopSidebarFamilyLink = document.getElementById('desktop-sidebar-family-link');
+        // const desktopSidebarFamilyLink = document.getElementById('desktop-sidebar-family-link'); // Will be removed
         const mobileOverlayMenu = document.getElementById('mobile-overlay-menu');
         const closeMobileOverlayButton = document.getElementById('close-mobile-overlay-button');
-        const mobileOverlayFamilyLink = document.getElementById('mobile-overlay-family-link');
+        // const mobileOverlayFamilyLink = document.getElementById('mobile-overlay-family-link'); // Will be removed
         const manageFamilyBtn = document.getElementById('manage-family-btn'); // Used by menu "Família" links
 
         let pendingManageFamilyAction = false; // Flag for deferred action
 
+        function populateMenus() {
+            const desktopMenuContainer = document.getElementById('desktop-sidebar-menu');
+            const mobileMenuContainer = document.getElementById('mobile-overlay-menu');
+
+            // Clear existing dynamic links (anchor tags that are direct children)
+            // Keep header and close button for desktop
+            if (desktopMenuContainer) {
+                Array.from(desktopMenuContainer.children).forEach(child => {
+                    if (child.tagName === 'A') {
+                        desktopMenuContainer.removeChild(child);
+                    }
+                });
+            }
+            // Keep header and close button for mobile
+             if (mobileMenuContainer) {
+                Array.from(mobileMenuContainer.children).forEach(child => {
+                    if (child.tagName === 'A') {
+                        mobileMenuContainer.removeChild(child);
+                    }
+                });
+            }
+
+            const links = getNavigationLinks('/'); // Current page is root
+
+            links.forEach(linkInfo => {
+                // Create for Desktop
+                if (desktopMenuContainer) {
+                    const aDesktop = document.createElement('a');
+                    aDesktop.href = linkInfo.href;
+                    aDesktop.textContent = linkInfo.text;
+                    aDesktop.className = 'block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md';
+                    if (linkInfo.href.includes('action=manageFamily')) {
+                        // The manageFamilyBtn.click() logic is now triggered by the main manageFamilyBtn
+                        // on the header for desktop, and this sidebar link will navigate and trigger URL param logic.
+                        // If specific sidebar button behavior is needed, it would be added here or by ID.
+                        // For now, relying on URL param and main button.
+                    }
+                    desktopMenuContainer.appendChild(aDesktop);
+                }
+
+                // Create for Mobile
+                if (mobileMenuContainer) {
+                    const aMobile = document.createElement('a');
+                    aMobile.href = linkInfo.href;
+                    aMobile.textContent = linkInfo.text;
+                    aMobile.className = 'block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md';
+                     if (linkInfo.href.includes('action=manageFamily')) {
+                        // Similar to desktop, relying on URL param logic.
+                        // Mobile specific family link behavior could be added here if needed.
+                    }
+                    mobileMenuContainer.appendChild(aMobile);
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            populateMenus(); // Populate menus after DOM is ready
             const loadingOverlay = document.getElementById('loading-overlay');
 
             // Check for URL parameters to trigger actions
@@ -1535,24 +1582,9 @@
                 });
             }
 
-            if (desktopSidebarFamilyLink && manageFamilyBtn) {
-                desktopSidebarFamilyLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (desktopSidebarMenu && !desktopSidebarMenu.classList.contains('hidden') && !desktopSidebarMenu.classList.contains('-translate-x-full')) {
-                        toggleDesktopSidebarMenu();
-                    }
-                    setTimeout(() => manageFamilyBtn.click(), 50);
-                });
-            }
-            if (mobileOverlayFamilyLink && manageFamilyBtn) {
-                mobileOverlayFamilyLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (mobileOverlayMenu && !mobileOverlayMenu.classList.contains('hidden') && !mobileOverlayMenu.classList.contains('translate-x-full')) {
-                        toggleMobileOverlayMenu();
-                    }
-                    setTimeout(() => manageFamilyBtn.click(), 50);
-                });
-            }
+            // Removed event listeners for desktopSidebarFamilyLink and mobileOverlayFamilyLink
+            // as these elements are now dynamically generated and direct href navigation is used.
+            // The manageFamilyBtn on the main header and URL param logic handle the "Família" action.
 
             document.addEventListener('click', (event) => {
                 if (window.matchMedia('(min-width: 1024px)').matches && desktopSidebarMenu && !desktopSidebarMenu.classList.contains('hidden') && !desktopSidebarMenu.classList.contains('-translate-x-full')) {
