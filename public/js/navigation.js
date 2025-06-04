@@ -3,7 +3,7 @@
 export const navigationLinks = [
   {
     text: 'Home',
-    href: '/', // Updated: Main page is now at the root
+    href: '/home', // Updated: Main page is now /home
     icon: null,
   },
   {
@@ -18,7 +18,7 @@ export const navigationLinks = [
   },
   {
     text: 'Família',
-    href: '/?action=manageFamily', // Updated: Points to root, action handled by index.html
+    href: '/home?action=manageFamily', // Updated: Points to /home for family action
     icon: null,
   },
   {
@@ -28,9 +28,8 @@ export const navigationLinks = [
   }
 ];
 
-// Function to adjust hrefs for use in sub-pages.
-// Given firebase.json rewrites, direct root-relative links should work.
-// The pagePath argument helps in contexts like active link highlighting.
+// Function to determine links.
+// The pagePath argument is used by calling pages to help determine active link.
 export function getNavigationLinks(pagePath = '/') {
   return navigationLinks.map(link => {
     // Returns links as defined, firebase.json rewrites handle resolution.
