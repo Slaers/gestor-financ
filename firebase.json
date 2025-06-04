@@ -12,12 +12,16 @@
     ],
     "rewrites": [
       {
+        "source": "/",
+        "destination": "/index.html"
+      },
+      {
         "source": "/home",
-        "destination": "/home.html"
+        "destination": "/index.html"
       },
       {
         "source": "/login",
-        "destination": "/index.html"
+        "destination": "/login.html"
       },
       {
         "source": "/investimentos",
@@ -26,18 +30,6 @@
       {
         "source": "/lancamentos",
         "destination": "/lancamentos.html"
-      },
-      {
-        "source": "/js/**",
-        "destination": "/js/**"
-      },
-      {
-        "source": "/css/**",
-        "destination": "/css/**"
-      },
-      {
-        "source": "/",
-        "destination": "/index.html"
       },
       {
         "source": "**",

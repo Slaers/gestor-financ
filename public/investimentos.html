@@ -51,7 +51,7 @@
 
             <!-- Wrapper for "Voltar" button, hidden on small screens -->
             <div class="hidden lg:flex items-center">
-                <a href="/home" class="bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-sky-700 dark:hover:bg-sky-500 transition-colors duration-150 ease-in-out text-sm">
+                <a href="/" class="bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-sky-700 dark:hover:bg-sky-500 transition-colors duration-150 ease-in-out text-sm">
                     Voltar ao Painel Principal
                 </a>
             </div>
@@ -246,605 +246,617 @@
 
         // Existing script content for investment page logic
         window.addEventListener('DOMContentLoaded', () => {
-            populateInvestimentosMenus(); // Call menu population here
-            // --- Household ID Logic ---
-            let currentHouseholdId = null;
-
-            function getHouseholdIdFromUrl() {
-          const params = new URLSearchParams(window.location.search);
-          return params.get('householdId');
-        }
-
-        function initializeHouseholdContext() {
-          currentHouseholdId = getHouseholdIdFromUrl();
-          if (currentHouseholdId) {
-            console.log('Current Household ID:', currentHouseholdId);
-          } else {
-            console.warn('No householdId found in URL.');
-          }
-        }
-        // --- End of Household ID Logic ---
-
-        let composicaoChartInstance = null; // Variable to hold the chart instance
-        let allInvestmentMetrics = []; // Declare at a higher scope
-
-        function renderComposicaoCarteiraChart(investmentsDataWithMetrics) {
-          const ctx = document.getElementById('composicaoCarteiraChart')?.getContext('2d');
-          if (!ctx) return;
-
-          if (composicaoChartInstance) {
-            composicaoChartInstance.destroy(); // Destroy previous instance if it exists
-          }
-
-          const dataByInvestmentType = {};
-          let totalPortfolioValue = 0;
-
-          investmentsDataWithMetrics.forEach(inv => {
-            const type = inv.investment_type || 'Outro'; // Default to 'Outro' if type is undefined
-            const value = inv.metrics?.market_value_current_holdings || 0;
-            dataByInvestmentType[type] = (dataByInvestmentType[type] || 0) + value;
-            totalPortfolioValue += value;
-          });
-
-          const labels = Object.keys(dataByInvestmentType);
-          const dataValues = Object.values(dataByInvestmentType);
-
-          // Define a set of colors, similar to index.html's chart
-          const backgroundColors = ['#0ea5e9', '#14b8a6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#8b5cf6', '#f43f5e', '#d946ef', '#84cc16'];
-          const hoverBackgroundColors = backgroundColors.map(color => `${color}B3`); // Add some opacity on hover
-
-          const isDarkMode = document.documentElement.classList.contains('dark');
-          const chartLabelColor = isDarkMode ? '#cbd5e1' : '#334155'; // slate-300 or slate-700
-          const tooltipBgColor = isDarkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255,255,255,0.9)'; // slate-800 with opacity or white
-          const tooltipTitleColor = isDarkMode ? '#f1f5f9' : '#1e293b'; // slate-100 or slate-800
-          const tooltipBodyColor = isDarkMode ? '#e2e8f0' : '#334155'; // slate-200 or slate-700
-          const tooltipBorderColor = isDarkMode ? '#475569' : '#e2e8f0'; // slate-600 or slate-200
-
-          if (labels.length === 0 || totalPortfolioValue === 0) {
-            // Handle no data: display a message or clear the canvas
-            // For now, just don't create the chart or clear it if it exists
-            // A more sophisticated message could be drawn onto the canvas directly.
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            // Optionally display a message in the center of the canvas
-            // ctx.textAlign = 'center';
-            // ctx.fillStyle = chartLabelColor;
-            // ctx.fillText("Sem dados para exibir a composição da carteira.", ctx.canvas.width / 2, ctx.canvas.height / 2);
-            return;
-          }
-
-          composicaoChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-              labels: labels,
-              datasets: [{
-                label: 'Composição da Carteira',
-                data: dataValues,
-                backgroundColor: backgroundColors.slice(0, labels.length),
-                hoverBackgroundColor: hoverBackgroundColors.slice(0, labels.length),
-                borderColor: isDarkMode ? '#1e293b' : '#f8fafc', // slate-800 or slate-50
-                borderWidth: 3
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: {
-                    color: chartLabelColor,
-                    boxWidth: 12,
-                    padding: 15,
-                    font: { size: 10 }
-                  }
-                },
-                tooltip: {
-                  backgroundColor: tooltipBgColor,
-                  titleColor: tooltipTitleColor,
-                  bodyColor: tooltipBodyColor,
-                  borderColor: tooltipBorderColor,
-                  borderWidth: 1,
-                  callbacks: {
-                    label: function(context) {
-                      let label = context.label || '';
-                      if (label) {
-                        label += ': ';
-                      }
-                      if (context.parsed !== null) {
-                        label += 'R$ ' + context.parsed.toFixed(2).replace('.', ',') + ' (' + ((context.parsed / totalPortfolioValue) * 100).toFixed(2) + '%)';
-                      }
-                      return label;
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }
-
-        // --- Loading State & UI Update Functions ---
-        function showLoading(elementId) {
-            const el = document.getElementById(elementId);
-            if (el) el.classList.remove('hidden');
-        }
-        function hideLoading(elementId) {
-            const el = document.getElementById(elementId);
-            if (el) el.classList.add('hidden');
-        }
-
-        async function loadAndDisplayInvestments() {
-          if (!currentHouseholdId) {
-            const loadingRow = document.getElementById('investments-table-loading');
-            if(loadingRow) loadingRow.innerHTML = '<td colspan="15" class="p-4 text-red-500">ID da Família não especificado na URL.</td>';
-            return;
-          }
-
-          const loadingRow = document.getElementById('investments-table-loading');
-          if (loadingRow) loadingRow.classList.remove('hidden');
-
-
-          try {
-            const investments = await getHouseholdInvestments(currentHouseholdId);
-            const tbody = document.getElementById('investments-table').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ''; // Clear existing rows
-
-            if (investments.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="15" class="p-4 text-center text-gray-500">Nenhum investimento encontrado para esta família.</td></tr>';
-              updateDashboardSummary([]);
-              renderComposicaoCarteiraChart([]); // Ensure chart is cleared or shows no data
-              return;
-            }
-
-            // const allInvestmentMetrics = []; // Already declared globally
-
-            for (const inv of investments) {
-              const transactions = await getHouseholdInvestmentTransactions(currentHouseholdId, inv.id);
-              const metrics = calculateInvestmentMetrics(transactions, inv.current_unit_price || '0');
-              allInvestmentMetrics.push({...inv, metrics: metrics }); // Store inv data along with metrics for portfolio %
-
-              const row = tbody.insertRow();
-              row.setAttribute('data-id', inv.id);
-
-              row.insertCell().textContent = inv.investment_name || '-';
-              row.insertCell().textContent = inv.asset_ticker_symbol || '-';
-              row.insertCell().textContent = inv.investment_type || '-';
-              row.insertCell().textContent = inv.institution || '-';
-
-              const qtyCell = row.insertCell();
-              qtyCell.textContent = metrics.current_total_quantity !== undefined ? metrics.current_total_quantity.toFixed(2) : '-';
-              qtyCell.classList.add('text-right');
-
-              const wapCell = row.insertCell();
-              wapCell.textContent = metrics.weighted_average_acquisition_price !== undefined ? `R$ ${metrics.weighted_average_acquisition_price.toFixed(2)}` : '-';
-              wapCell.classList.add('text-right');
-
-              const investedCell = row.insertCell();
-              investedCell.textContent = metrics.cost_basis_current_holdings !== undefined ? `R$ ${metrics.cost_basis_current_holdings.toFixed(2)}` : '-';
-              investedCell.classList.add('text-right');
-
-              const currentPriceCell = row.insertCell();
-              currentPriceCell.textContent = inv.current_unit_price ? `R$ ${parseFloat(inv.current_unit_price).toFixed(2)}` : '-';
-              currentPriceCell.classList.add('text-right');
-
-              const marketValueCell = row.insertCell();
-              marketValueCell.textContent = metrics.market_value_current_holdings !== undefined ? `R$ ${metrics.market_value_current_holdings.toFixed(2)}` : '-';
-              marketValueCell.classList.add('text-right');
-
-              const profitLossAbsCell = row.insertCell();
-              profitLossAbsCell.textContent = metrics.profit_loss_absolute !== undefined ? `R$ ${metrics.profit_loss_absolute.toFixed(2)}` : '-';
-              profitLossAbsCell.classList.add('text-right');
-              if (metrics.profit_loss_absolute > 0) profitLossAbsCell.classList.add('text-green-600');
-              else if (metrics.profit_loss_absolute < 0) profitLossAbsCell.classList.add('text-red-600');
-
-              const profitLossPercCell = row.insertCell();
-              profitLossPercCell.textContent = metrics.profit_loss_percentage !== undefined ? `${metrics.profit_loss_percentage.toFixed(2)}%` : '-';
-              profitLossPercCell.classList.add('text-right');
-              if (metrics.profit_loss_percentage > 0) profitLossPercCell.classList.add('text-green-600');
-              else if (metrics.profit_loss_percentage < 0) profitLossPercCell.classList.add('text-red-600');
-
-              const portfolioPercCell = row.insertCell(); // % Portfolio
-              portfolioPercCell.textContent = '-';
-              portfolioPercCell.classList.add('text-right');
-
-              row.insertCell().textContent = inv.maturity_date && inv.maturity_date.seconds ? new Date(inv.maturity_date.seconds * 1000).toLocaleDateString() : '-';
-
-              const statusCell = row.insertCell();
-              statusCell.innerHTML = `<span class="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded-full">${inv.status || 'Ativo'}</span>`;
-              if (inv.status === 'Ativo') statusCell.querySelector('span').classList.replace('text-gray-700','text-green-700');
-              if (inv.status === 'Ativo') statusCell.querySelector('span').classList.replace('bg-gray-100','bg-green-100');
-
-
-              const actionsCell = row.insertCell();
-              actionsCell.classList.add('text-center', 'whitespace-nowrap');
-              actionsCell.innerHTML = `
-                <button onclick="openInvestmentDetailModal('${inv.id}')" class="text-blue-600 hover:text-blue-800 p-1" aria-label="Ver Detalhes ou Editar Investimento">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828zM5 12V7.172l2.586-2.586A2 2 0 0110 4.172l-2.586 2.586L5 9.172V12zM15 14H5a1 1 0 00-1 1v2a1 1 0 001 1h10a1 1 0 001-1v-2a1 1 0 00-1-1z"/></svg>
-                </button>
-                <button onclick="openTransactionFormModal('${inv.id}')" class="text-green-600 hover:text-green-800 p-1" aria-label="Registrar Transação">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-                </button>
-                <button onclick="handleDeleteInvestment('${inv.id}')" class="text-red-600 hover:text-red-800 p-1" aria-label="Excluir Investimento">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                </button>
-              `;
-            }
-            renderComposicaoCarteiraChart(allInvestmentMetrics); // Call the new chart rendering function
-            updateDashboardSummary(allInvestmentMetrics.map(inv => inv.metrics)); // Pass only metrics array
-            updatePortfolioPercentageColumn(allInvestmentMetrics); // Pass array of inv + metrics
-
-          } catch (error) {
-            console.error("Error loading investments: ", error);
-            if(loadingRow) loadingRow.innerHTML = `<td colspan="15" class="p-4 text-red-500 text-center">Erro ao carregar investimentos: ${error.message}</td>`;
-            updateDashboardSummary([]); // Clear dashboard on error
-          } finally {
-            if (loadingRow) loadingRow.classList.add('hidden');
-          }
-        }
-
-        function updatePortfolioPercentageColumn(allInvestmentsWithMetrics) {
-            const totalPortfolioValue = allInvestmentsWithMetrics.reduce((sum, inv) => sum + (inv.metrics.market_value_current_holdings || 0), 0);
-            const tbody = document.getElementById('investments-table').getElementsByTagName('tbody')[0];
-
-            let rowIndex = 0;
-            for (const inv of allInvestmentsWithMetrics) {
-                const row = tbody.rows[rowIndex];
-                if (!row || !row.cells[11] || !inv.metrics) { // Check if row and cell exist
-                    rowIndex++;
-                    continue;
-                }
-                const marketValue = inv.metrics.market_value_current_holdings || 0;
-                if (totalPortfolioValue > 0 && !isNaN(marketValue)) {
-                    const percentage = (marketValue / totalPortfolioValue) * 100;
-                    row.cells[11].textContent = percentage.toFixed(2) + '%';
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    console.log('User not authenticated on investimentos.html, redirecting to /login.');
+                    window.location.href = '/login'; // Corrected to /login
                 } else {
-                    row.cells[11].textContent = '0.00%';
+                    // User is signed in, proceed with page initialization.
+                    console.log('User authenticated on investimentos.html, proceeding with page load.');
+
+                    populateInvestimentosMenus(); // Call menu population here
+                    // --- Household ID Logic ---
+                    let currentHouseholdId = null;
+
+                    function getHouseholdIdFromUrl() {
+                      const params = new URLSearchParams(window.location.search);
+                      return params.get('householdId');
+                    }
+
+                    function initializeHouseholdContext() {
+                      currentHouseholdId = getHouseholdIdFromUrl();
+                      if (currentHouseholdId) {
+                        console.log('Current Household ID:', currentHouseholdId);
+                      } else {
+                        console.warn('No householdId found in URL.');
+                      }
+                    }
+                    // --- End of Household ID Logic ---
+
+                    let composicaoChartInstance = null; // Variable to hold the chart instance
+                    let allInvestmentMetrics = []; // Declare at a higher scope
+
+                    function renderComposicaoCarteiraChart(investmentsDataWithMetrics) {
+                      const ctx = document.getElementById('composicaoCarteiraChart')?.getContext('2d');
+                      if (!ctx) return;
+
+                      if (composicaoChartInstance) {
+                        composicaoChartInstance.destroy(); // Destroy previous instance if it exists
+                      }
+
+                      const dataByInvestmentType = {};
+                      let totalPortfolioValue = 0;
+
+                      investmentsDataWithMetrics.forEach(inv => {
+                        const type = inv.investment_type || 'Outro'; // Default to 'Outro' if type is undefined
+                        const value = inv.metrics?.market_value_current_holdings || 0;
+                        dataByInvestmentType[type] = (dataByInvestmentType[type] || 0) + value;
+                        totalPortfolioValue += value;
+                      });
+
+                      const labels = Object.keys(dataByInvestmentType);
+                      const dataValues = Object.values(dataByInvestmentType);
+
+                      // Define a set of colors, similar to index.html's chart
+                      const backgroundColors = ['#0ea5e9', '#14b8a6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#8b5cf6', '#f43f5e', '#d946ef', '#84cc16'];
+                      const hoverBackgroundColors = backgroundColors.map(color => `${color}B3`); // Add some opacity on hover
+
+                      const isDarkMode = document.documentElement.classList.contains('dark');
+                      const chartLabelColor = isDarkMode ? '#cbd5e1' : '#334155'; // slate-300 or slate-700
+                      const tooltipBgColor = isDarkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255,255,255,0.9)'; // slate-800 with opacity or white
+                      const tooltipTitleColor = isDarkMode ? '#f1f5f9' : '#1e293b'; // slate-100 or slate-800
+                      const tooltipBodyColor = isDarkMode ? '#e2e8f0' : '#334155'; // slate-200 or slate-700
+                      const tooltipBorderColor = isDarkMode ? '#475569' : '#e2e8f0'; // slate-600 or slate-200
+
+                      if (labels.length === 0 || totalPortfolioValue === 0) {
+                        // Handle no data: display a message or clear the canvas
+                        // For now, just don't create the chart or clear it if it exists
+                        // A more sophisticated message could be drawn onto the canvas directly.
+                        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                        // Optionally display a message in the center of the canvas
+                        // ctx.textAlign = 'center';
+                        // ctx.fillStyle = chartLabelColor;
+                        // ctx.fillText("Sem dados para exibir a composição da carteira.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                        return;
+                      }
+
+                      composicaoChartInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                          labels: labels,
+                          datasets: [{
+                            label: 'Composição da Carteira',
+                            data: dataValues,
+                            backgroundColor: backgroundColors.slice(0, labels.length),
+                            hoverBackgroundColor: hoverBackgroundColors.slice(0, labels.length),
+                            borderColor: isDarkMode ? '#1e293b' : '#f8fafc', // slate-800 or slate-50
+                            borderWidth: 3
+                          }]
+                        },
+                        options: {
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              position: 'bottom',
+                              labels: {
+                                color: chartLabelColor,
+                                boxWidth: 12,
+                                padding: 15,
+                                font: { size: 10 }
+                              }
+                            },
+                            tooltip: {
+                              backgroundColor: tooltipBgColor,
+                              titleColor: tooltipTitleColor,
+                              bodyColor: tooltipBodyColor,
+                              borderColor: tooltipBorderColor,
+                              borderWidth: 1,
+                              callbacks: {
+                                label: function(context) {
+                                  let label = context.label || '';
+                                  if (label) {
+                                    label += ': ';
+                                  }
+                                  if (context.parsed !== null) {
+                                    label += 'R$ ' + context.parsed.toFixed(2).replace('.', ',') + ' (' + ((context.parsed / totalPortfolioValue) * 100).toFixed(2) + '%)';
+                                  }
+                                  return label;
+                                }
+                              }
+                            }
+                          }
+                        }
+                      });
+                    }
+
+                    // --- Loading State & UI Update Functions ---
+                    function showLoading(elementId) {
+                        const el = document.getElementById(elementId);
+                        if (el) el.classList.remove('hidden');
+                    }
+                    function hideLoading(elementId) {
+                        const el = document.getElementById(elementId);
+                        if (el) el.classList.add('hidden');
+                    }
+
+                    async function loadAndDisplayInvestments() {
+                      if (!currentHouseholdId) {
+                        const loadingRow = document.getElementById('investments-table-loading');
+                        if(loadingRow) loadingRow.innerHTML = '<td colspan="15" class="p-4 text-red-500">ID da Família não especificado na URL.</td>';
+                        return;
+                      }
+
+                      const loadingRow = document.getElementById('investments-table-loading');
+                      if (loadingRow) loadingRow.classList.remove('hidden');
+
+
+                      try {
+                        const investments = await getHouseholdInvestments(currentHouseholdId);
+                        const tbody = document.getElementById('investments-table').getElementsByTagName('tbody')[0];
+                        tbody.innerHTML = ''; // Clear existing rows
+
+                        if (investments.length === 0) {
+                          tbody.innerHTML = '<tr><td colspan="15" class="p-4 text-center text-gray-500">Nenhum investimento encontrado para esta família.</td></tr>';
+                          updateDashboardSummary([]);
+                          renderComposicaoCarteiraChart([]); // Ensure chart is cleared or shows no data
+                          return;
+                        }
+
+                        // const allInvestmentMetrics = []; // Already declared globally
+
+                        for (const inv of investments) {
+                          const transactions = await getHouseholdInvestmentTransactions(currentHouseholdId, inv.id);
+                          const metrics = calculateInvestmentMetrics(transactions, inv.current_unit_price || '0');
+                          allInvestmentMetrics.push({...inv, metrics: metrics }); // Store inv data along with metrics for portfolio %
+
+                          const row = tbody.insertRow();
+                          row.setAttribute('data-id', inv.id);
+
+                          row.insertCell().textContent = inv.investment_name || '-';
+                          row.insertCell().textContent = inv.asset_ticker_symbol || '-';
+                          row.insertCell().textContent = inv.investment_type || '-';
+                          row.insertCell().textContent = inv.institution || '-';
+
+                          const qtyCell = row.insertCell();
+                          qtyCell.textContent = metrics.current_total_quantity !== undefined ? metrics.current_total_quantity.toFixed(2) : '-';
+                          qtyCell.classList.add('text-right');
+
+                          const wapCell = row.insertCell();
+                          wapCell.textContent = metrics.weighted_average_acquisition_price !== undefined ? `R$ ${metrics.weighted_average_acquisition_price.toFixed(2)}` : '-';
+                          wapCell.classList.add('text-right');
+
+                          const investedCell = row.insertCell();
+                          investedCell.textContent = metrics.cost_basis_current_holdings !== undefined ? `R$ ${metrics.cost_basis_current_holdings.toFixed(2)}` : '-';
+                          investedCell.classList.add('text-right');
+
+                          const currentPriceCell = row.insertCell();
+                          currentPriceCell.textContent = inv.current_unit_price ? `R$ ${parseFloat(inv.current_unit_price).toFixed(2)}` : '-';
+                          currentPriceCell.classList.add('text-right');
+
+                          const marketValueCell = row.insertCell();
+                          marketValueCell.textContent = metrics.market_value_current_holdings !== undefined ? `R$ ${metrics.market_value_current_holdings.toFixed(2)}` : '-';
+                          marketValueCell.classList.add('text-right');
+
+                          const profitLossAbsCell = row.insertCell();
+                          profitLossAbsCell.textContent = metrics.profit_loss_absolute !== undefined ? `R$ ${metrics.profit_loss_absolute.toFixed(2)}` : '-';
+                          profitLossAbsCell.classList.add('text-right');
+                          if (metrics.profit_loss_absolute > 0) profitLossAbsCell.classList.add('text-green-600');
+                          else if (metrics.profit_loss_absolute < 0) profitLossAbsCell.classList.add('text-red-600');
+
+                          const profitLossPercCell = row.insertCell();
+                          profitLossPercCell.textContent = metrics.profit_loss_percentage !== undefined ? `${metrics.profit_loss_percentage.toFixed(2)}%` : '-';
+                          profitLossPercCell.classList.add('text-right');
+                          if (metrics.profit_loss_percentage > 0) profitLossPercCell.classList.add('text-green-600');
+                          else if (metrics.profit_loss_percentage < 0) profitLossPercCell.classList.add('text-red-600');
+
+                          const portfolioPercCell = row.insertCell(); // % Portfolio
+                          portfolioPercCell.textContent = '-';
+                          portfolioPercCell.classList.add('text-right');
+
+                          row.insertCell().textContent = inv.maturity_date && inv.maturity_date.seconds ? new Date(inv.maturity_date.seconds * 1000).toLocaleDateString() : '-';
+
+                          const statusCell = row.insertCell();
+                          statusCell.innerHTML = `<span class="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded-full">${inv.status || 'Ativo'}</span>`;
+                          if (inv.status === 'Ativo') statusCell.querySelector('span').classList.replace('text-gray-700','text-green-700');
+                          if (inv.status === 'Ativo') statusCell.querySelector('span').classList.replace('bg-gray-100','bg-green-100');
+
+
+                          const actionsCell = row.insertCell();
+                          actionsCell.classList.add('text-center', 'whitespace-nowrap');
+                          actionsCell.innerHTML = `
+                            <button onclick="openInvestmentDetailModal('${inv.id}')" class="text-blue-600 hover:text-blue-800 p-1" aria-label="Ver Detalhes ou Editar Investimento">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828zM5 12V7.172l2.586-2.586A2 2 0 0110 4.172l-2.586 2.586L5 9.172V12zM15 14H5a1 1 0 00-1 1v2a1 1 0 001 1h10a1 1 0 001-1v-2a1 1 0 00-1-1z"/></svg>
+                            </button>
+                            <button onclick="openTransactionFormModal('${inv.id}')" class="text-green-600 hover:text-green-800 p-1" aria-label="Registrar Transação">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                            </button>
+                            <button onclick="handleDeleteInvestment('${inv.id}')" class="text-red-600 hover:text-red-800 p-1" aria-label="Excluir Investimento">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            </button>
+                          `;
+                        }
+                        renderComposicaoCarteiraChart(allInvestmentMetrics); // Call the new chart rendering function
+                        updateDashboardSummary(allInvestmentMetrics.map(inv => inv.metrics)); // Pass only metrics array
+                        updatePortfolioPercentageColumn(allInvestmentMetrics); // Pass array of inv + metrics
+
+                      } catch (error) {
+                        console.error("Error loading investments: ", error);
+                        if(loadingRow) loadingRow.innerHTML = `<td colspan="15" class="p-4 text-red-500 text-center">Erro ao carregar investimentos: ${error.message}</td>`;
+                        updateDashboardSummary([]); // Clear dashboard on error
+                      } finally {
+                        if (loadingRow) loadingRow.classList.add('hidden');
+                      }
+                    }
+
+                    function updatePortfolioPercentageColumn(allInvestmentsWithMetrics) {
+                        const totalPortfolioValue = allInvestmentsWithMetrics.reduce((sum, inv) => sum + (inv.metrics.market_value_current_holdings || 0), 0);
+                        const tbody = document.getElementById('investments-table').getElementsByTagName('tbody')[0];
+
+                        let rowIndex = 0;
+                        for (const inv of allInvestmentsWithMetrics) {
+                            const row = tbody.rows[rowIndex];
+                            if (!row || !row.cells[11] || !inv.metrics) { // Check if row and cell exist
+                                rowIndex++;
+                                continue;
+                            }
+                            const marketValue = inv.metrics.market_value_current_holdings || 0;
+                            if (totalPortfolioValue > 0 && !isNaN(marketValue)) {
+                                const percentage = (marketValue / totalPortfolioValue) * 100;
+                                row.cells[11].textContent = percentage.toFixed(2) + '%';
+                            } else {
+                                row.cells[11].textContent = '0.00%';
+                            }
+                            rowIndex++;
+                        }
+                    }
+
+                    function updateDashboardSummary(allInvestmentMetricsOnly) { // Expects array of metrics objects
+                      const portfolioSummary = calculatePortfolioSummary(allInvestmentMetricsOnly);
+
+                      const formatCurrency = (value) => value !== undefined ? `R$ ${value.toFixed(2)}` : 'R$ -';
+                      const formatPercentage = (value) => value !== undefined ? `${value.toFixed(2)}%` : '- %';
+
+                      document.getElementById('db-total-patrimonio').innerHTML = `${formatCurrency(portfolioSummary.current_total_portfolio_value)} <span id="db-total-patrimonio-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span>`;
+                      document.getElementById('db-total-investido').innerHTML = `${formatCurrency(portfolioSummary.total_invested_portfolio_all_time)} <span id="db-total-investido-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span>`;
+
+                      const resultadoReaisEl = document.getElementById('db-resultado-reais');
+                      resultadoReaisEl.innerHTML = `${formatCurrency(portfolioSummary.overall_portfolio_profit_loss_absolute)} <span id="db-resultado-reais-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span>`;
+                      resultadoReaisEl.className = 'text-2xl font-semibold';
+                      if (portfolioSummary.overall_portfolio_profit_loss_absolute > 0) resultadoReaisEl.classList.add('text-green-600');
+                      else if (portfolioSummary.overall_portfolio_profit_loss_absolute < 0) resultadoReaisEl.classList.add('text-red-600');
+                      else resultadoReaisEl.classList.add('text-gray-700');
+
+                      const resultadoPercEl = document.getElementById('db-resultado-percentual');
+                      resultadoPercEl.innerHTML = `${formatPercentage(portfolioSummary.overall_portfolio_profit_loss_percentage)} <span id="db-resultado-percentual-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span>`;
+                      resultadoPercEl.className = 'text-2xl font-semibold';
+                      if (portfolioSummary.overall_portfolio_profit_loss_percentage > 0) resultadoPercEl.classList.add('text-green-600');
+                      else if (portfolioSummary.overall_portfolio_profit_loss_percentage < 0) resultadoPercEl.classList.add('text-red-600');
+                      else resultadoPercEl.classList.add('text-gray-700');
+                    }
+
+                    // --- Form Modal & Submission ---
+                    const investmentForm = document.getElementById('investment-form');
+                    const investmentModal = document.getElementById('investment-form-modal'); // Already defined for toggle
+                    const addInvestmentBtn = document.getElementById('btn-add-new-investment'); // Already defined
+                    const closeBtn = document.getElementById('modal-close-btn'); // Already defined
+                    const cancelBtn = document.getElementById('modal-cancel-btn'); // Already defined
+                    const modalTitleEl = document.getElementById('form-modal-title-id'); // Changed from 'modal-title'
+
+
+                    addInvestmentBtn?.addEventListener('click', () => {
+                      modalTitleEl.textContent = 'Adicionar Novo Investimento';
+                      investmentForm.reset();
+                      document.getElementById('investment_id').value = ''; // Clear hidden ID field
+                      document.getElementById('rf-specific-fields').classList.add('hidden');
+                      document.getElementById('acoes-specific-fields').classList.add('hidden');
+                      document.getElementById('fundos-specific-fields').classList.add('hidden');
+                      document.getElementById('crypto-specific-fields').classList.add('hidden');
+                      investmentModal.classList.remove('hidden');
+                    });
+
+                    investmentForm.addEventListener('submit', async function(event) {
+                      event.preventDefault();
+                      if (!currentHouseholdId) {
+                        alert("ID da Família não encontrado. Não é possível salvar.");
+                        return;
+                      }
+                      const formData = new FormData(investmentForm);
+                      const data = Object.fromEntries(formData.entries());
+
+                      // Basic data processing
+                      data.total_quantity = parseFloat(data.initial_quantity) || 0;
+                      data.current_unit_price = parseFloat(data.initial_acquisition_price) || 0;
+                      if (data.initial_acquisition_date) {
+                        data.acquisition_date = firebase.firestore.Timestamp.fromDate(new Date(data.initial_acquisition_date));
+                      } else {
+                         data.acquisition_date = firebase.firestore.FieldValue.serverTimestamp(); // Default if not provided
+                      }
+
+                      const initialFees = parseFloat(formData.get('initial_fees_paid')) || 0;
+
+                      // Remove form-specific fields not part of the main investment schema before saving to 'investments'
+                      const coreInvestmentData = {...data};
+                      delete coreInvestmentData.initial_quantity;
+                      delete coreInvestmentData.initial_acquisition_price;
+                      delete coreInvestmentData.initial_acquisition_date;
+                      delete coreInvestmentData.initial_fees_paid;
+                      // Type-specific fields are assumed to be part of 'data' and will be saved if present
+                      // More sophisticated logic might be needed to clean them based on investment_type
+
+                      const investmentId = coreInvestmentData.investment_id;
+                      delete coreInvestmentData.investment_id;
+
+
+                      const formMessage = document.getElementById('form-message');
+                      try {
+                        formMessage.textContent = 'Salvando...';
+                        formMessage.className = 'mb-3 text-sm text-center text-blue-600';
+
+                        if (investmentId) {
+                          await updateHouseholdInvestment(currentHouseholdId, investmentId, coreInvestmentData);
+                          formMessage.textContent = 'Investimento atualizado com sucesso!';
+                        } else {
+                          const newInvestmentId = await addHouseholdInvestment(currentHouseholdId, coreInvestmentData);
+                          if (newInvestmentId && data.total_quantity > 0) {
+                              const initialTransaction = {
+                                  transaction_type: 'Compra/Aporte',
+                                  transaction_date: data.acquisition_date,
+                                  quantity_transacted: data.total_quantity,
+                                  price_per_unit_transacted: data.current_unit_price,
+                                  fees_paid: initialFees
+                              };
+                              await addHouseholdInvestmentTransaction(currentHouseholdId, newInvestmentId, initialTransaction);
+                          }
+                          formMessage.textContent = 'Investimento adicionado com sucesso!';
+                        }
+                        formMessage.classList.replace('text-blue-600', 'text-green-600');
+                        investmentForm.reset();
+                        investmentModal.classList.add('hidden');
+                        loadAndDisplayInvestments();
+                      } catch (error) {
+                        console.error("Error saving investment: ", error);
+                        formMessage.textContent = `Erro ao salvar: ${error.message}`;
+                        formMessage.classList.replace('text-blue-600', 'text-red-600');
+                      }
+                    });
+
+                    // --- Detail Modal ---
+                    const investmentDetailModal = document.getElementById('investment-detail-modal'); // Already defined
+                    const detailCloseBtn = document.getElementById('detail-modal-close-btn'); // Already defined
+                    const detailModalTitleEl = document.getElementById('detail-modal-title-id'); // Changed from 'detail-modal-title'
+
+                    async function openInvestmentDetailModal(investmentId) {
+                      if (!currentHouseholdId || !investmentId) return;
+
+                      document.getElementById('detail-modal-title').textContent = 'Carregando Detalhes...';
+                      document.getElementById('investment-detail-content').innerHTML = '<p class="text-center p-4">Carregando...</p>';
+                      document.getElementById('transaction_log_body').innerHTML = '';
+                      investmentDetailModal.classList.remove('hidden');
+
+                      try {
+                        const investments = await getHouseholdInvestments(currentHouseholdId);
+                        const investment = investments.find(inv => inv.id === investmentId);
+
+                        if (!investment) throw new Error('Investimento não encontrado.');
+
+                        const transactions = await getHouseholdInvestmentTransactions(currentHouseholdId, investmentId);
+                        const metrics = calculateInvestmentMetrics(transactions, investment.current_unit_price || '0');
+
+                        detailModalTitleEl.textContent = `Detalhes: ${investment.investment_name}`;
+
+                        // Populate #investment-detail-content (General)
+                        document.getElementById('detail-investment_name').textContent = investment.investment_name || '-';
+                        document.getElementById('detail-asset_ticker_symbol').textContent = investment.asset_ticker_symbol || '-';
+                        document.getElementById('detail-investment_type').textContent = investment.investment_type || '-';
+                        document.getElementById('detail-investment_subtype').textContent = investment.investment_subtype || '-';
+                        document.getElementById('detail-institution').textContent = investment.institution || '-';
+                        document.getElementById('detail-account_identifier').textContent = investment.account_identifier || '-';
+                        document.getElementById('detail-currency').textContent = investment.currency || '-';
+                        document.getElementById('detail-status').textContent = investment.status || '-';
+                        document.getElementById('detail-risk_level').textContent = investment.risk_level || '-';
+                        document.getElementById('detail-objective').textContent = investment.objective || '-';
+                        document.getElementById('detail-notes').textContent = investment.notes || '-';
+
+                        // Populate #investment-detail-content (Values & Quantities)
+                        document.getElementById('detail-acquisition_date').textContent = investment.acquisition_date && investment.acquisition_date.seconds ? new Date(investment.acquisition_date.seconds * 1000).toLocaleDateString() : '-';
+                        document.getElementById('detail-total_quantity').textContent = metrics.current_total_quantity !== undefined ? metrics.current_total_quantity.toFixed(2) : '-';
+                        document.getElementById('detail-weighted_average_acquisition_price').textContent = metrics.weighted_average_acquisition_price !== undefined ? `R$ ${metrics.weighted_average_acquisition_price.toFixed(2)}` : '-';
+                        document.getElementById('detail-total_invested_amount').textContent = metrics.cost_basis_current_holdings !== undefined ? `R$ ${metrics.cost_basis_current_holdings.toFixed(2)}` : '-'; // Using cost_basis_current_holdings for "Total Investido Atual"
+                        document.getElementById('detail-current_unit_price').textContent = investment.current_unit_price ? `R$ ${parseFloat(investment.current_unit_price).toFixed(2)}` : '-';
+                        document.getElementById('detail-current_total_value').textContent = metrics.market_value_current_holdings !== undefined ? `R$ ${metrics.market_value_current_holdings.toFixed(2)}` : '-';
+                        document.getElementById('detail-profit_loss_absolute').textContent = metrics.profit_loss_absolute !== undefined ? `R$ ${metrics.profit_loss_absolute.toFixed(2)}` : '-';
+                        document.getElementById('detail-profit_loss_percentage').textContent = metrics.profit_loss_percentage !== undefined ? `${metrics.profit_loss_percentage.toFixed(2)}%` : '-';
+                        // % Portfolio will be filled by a separate function after all data is loaded for the main table
+
+                        // Show/hide and populate type-specific fields
+                        ['detail-rf-specific-fields', 'detail-acoes-specific-fields', 'detail-fundos-specific-fields', 'detail-crypto-specific-fields'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                        if (investment.investment_type === 'Tesouro Direto' || investment.investment_type === 'CDB' || investment.investment_type === 'LCI' || investment.investment_type === 'LCA' || investment.investment_type === 'Debênture' || investment.investment_type === 'Poupança') {
+                            document.getElementById('detail-rf-specific-fields').classList.remove('hidden');
+                            document.getElementById('detail-maturity_date').textContent = investment.maturity_date && investment.maturity_date.seconds ? new Date(investment.maturity_date.seconds * 1000).toLocaleDateString() : '-';
+                            document.getElementById('detail-interest_rate_type').textContent = investment.interest_rate_type || '-';
+                            document.getElementById('detail-contracted_rate_percentage').textContent = investment.contracted_rate_percentage ? `${investment.contracted_rate_percentage}%` : '-';
+                            document.getElementById('detail-indexer').textContent = investment.indexer || '-';
+                            document.getElementById('detail-taxation_type').textContent = investment.taxation_type || '-';
+                            document.getElementById('detail-is_fgc_covered').textContent = investment.is_fgc_covered ? 'Sim' : 'Não';
+                        } // Add else if for other types
+
+                        const transactionTbody = document.getElementById('transaction_log_body');
+                        transactionTbody.innerHTML = '';
+                        if (transactions.length > 0) {
+                          transactions.forEach(tx => {
+                            const row = transactionTbody.insertRow();
+                            row.insertCell().textContent = tx.transaction_date && tx.transaction_date.seconds ? new Date(tx.transaction_date.seconds * 1000).toLocaleDateString() : '-';
+                            row.insertCell().textContent = tx.transaction_type || '-';
+                            row.insertCell().textContent = tx.quantity_transacted !== undefined ? tx.quantity_transacted.toFixed(2) : '-';
+                            row.insertCell().textContent = tx.price_per_unit_transacted !== undefined ? `R$ ${parseFloat(tx.price_per_unit_transacted).toFixed(2)}` : '-';
+                            row.insertCell().textContent = (tx.quantity_transacted !== undefined && tx.price_per_unit_transacted !== undefined) ? `R$ ${(parseFloat(tx.quantity_transacted) * parseFloat(tx.price_per_unit_transacted)).toFixed(2)}` : '-';
+                            row.insertCell().textContent = tx.fees_paid !== undefined ? `R$ ${(parseFloat(tx.fees_paid) || 0).toFixed(2)}` : '-';
+                            const netAmount = (tx.quantity_transacted !== undefined && tx.price_per_unit_transacted !== undefined) ? (parseFloat(tx.quantity_transacted) * parseFloat(tx.price_per_unit_transacted)) - (parseFloat(tx.fees_paid) || 0) : 0;
+                            row.insertCell().textContent = `R$ ${netAmount.toFixed(2)}`;
+                          });
+                        } else {
+                          transactionTbody.innerHTML = '<tr><td colspan="7" class="p-2 text-center text-gray-500">Nenhuma transação registrada.</td></tr>';
+                        }
+                        investmentDetailModal.setAttribute('data-current-investment-id', investmentId);
+
+                      } catch (error) {
+                        console.error("Error opening investment detail: ", error);
+                        document.getElementById('investment-detail-content').innerHTML = `<p class="text-red-500 p-4 text-center">Erro ao carregar detalhes: ${error.message}</p>`;
+                      }
+                    }
+
+                    async function handleDeleteInvestment(investmentId) {
+                      if (!currentHouseholdId || !investmentId) return;
+                      if (confirm(`Tem certeza que deseja excluir este investimento e todas as suas transações? Esta ação não pode ser desfeita.`)) {
+                        try {
+                          const transactions = await getHouseholdInvestmentTransactions(currentHouseholdId, investmentId);
+                          for (const tx of transactions) {
+                            await deleteHouseholdInvestmentTransaction(currentHouseholdId, investmentId, tx.id);
+                          }
+                          await deleteHouseholdInvestment(currentHouseholdId, investmentId);
+                          alert('Investimento e suas transações foram excluídos com sucesso!');
+                          loadAndDisplayInvestments();
+                          investmentDetailModal.classList.add('hidden'); // Close detail modal if open
+                        } catch (error) {
+                          console.error("Error deleting investment: ", error);
+                          alert(`Erro ao excluir investimento: ${error.message}`);
+                        }
+                      }
+                    }
+
+                    function openTransactionFormModal(investmentId) {
+                        alert(`Funcionalidade "Adicionar Transação" para o investimento ID: ${investmentId} ainda não implementada.\nIsso abriria um formulário para adicionar uma nova transação a este investimento.`);
+                        // Implementation:
+                        // 1. Get a reference to a dedicated transaction form modal (needs to be created in HTML).
+                        // 2. Pre-fill the investmentId in that form.
+                        // 3. Display the transaction form modal.
+                        // 4. Handle its submission to call addHouseholdInvestmentTransaction().
+                    }
+
+                    // Initial Page Load
+                    // window.addEventListener('DOMContentLoaded', () => { // This is already inside a DOMContentLoaded
+                      initializeHouseholdContext();
+                      if (currentHouseholdId) {
+                        loadAndDisplayInvestments();
+                      } else {
+                        const listBody = document.getElementById('investments-table-body'); // Corrected from getElementsByTagName
+                        if(listBody) listBody.innerHTML = '<tr><td colspan="15" class="p-4 text-center text-red-500">ID da Família não encontrado na URL. Verifique o link de acesso ou selecione uma família.</td></tr>';
+                        updateDashboardSummary([]);
+                      }
+
+                      // Event listeners for modals (already defined in previous steps, ensure they are here)
+                      // Form Modal
+                      closeBtn?.addEventListener('click', () => investmentModal.classList.add('hidden'));
+                      cancelBtn?.addEventListener('click', () => investmentModal.classList.add('hidden'));
+                      investmentModal?.addEventListener('click', (event) => {
+                        if (event.target === investmentModal) investmentModal.classList.add('hidden');
+                      });
+                      // Detail Modal
+                      detailCloseBtn?.addEventListener('click', () => investmentDetailModal.classList.add('hidden'));
+                      investmentDetailModal?.addEventListener('click', (event) => {
+                        if (event.target === investmentDetailModal) investmentDetailModal.classList.add('hidden');
+                      });
+                      // Escape key
+                      document.addEventListener('keydown', (event) => {
+                        if (event.key === 'Escape') closeAllModals();
+                      });
+                       // Dynamic fields for form modal
+                      investmentTypeSelect?.addEventListener('change', function() {
+                        const type = this.value;
+                        document.getElementById('rf-specific-fields').classList.add('hidden');
+                        document.getElementById('acoes-specific-fields').classList.add('hidden');
+                        document.getElementById('fundos-specific-fields').classList.add('hidden');
+                        document.getElementById('crypto-specific-fields').classList.add('hidden');
+
+                        if (type === 'Tesouro Direto' || type === 'CDB' || type === 'LCI' || type === 'LCA' || type === 'Debênture' || type === 'Poupança') {
+                            document.getElementById('rf-specific-fields').classList.remove('hidden');
+                        } else if (type === 'Ação') {
+                            document.getElementById('acoes-specific-fields').classList.remove('hidden');
+                        } else if (type === 'FII' || type === 'ETF' || type === 'Fundo de Investimento' || type === 'Previdência Privada') { // Added Previdência to Fundos
+                            document.getElementById('fundos-specific-fields').classList.remove('hidden');
+                        } else if (type === 'Moeda Digital') {
+                            document.getElementById('crypto-specific-fields').classList.remove('hidden');
+                        }
+                      });
+                       // Sample view button - This is conceptual if rows are dynamic.
+                       // Event delegation on tbody would be better for dynamic rows.
+                      const sampleViewButton = document.querySelector('#investments-table-body tr:not(#investments-table-loading) button[title="Ver Detalhes/Editar"]');
+                      sampleViewButton?.addEventListener('click', (event) => {
+                        openInvestmentDetailModal('sampleInvestmentId');
+                      });
+
+                      const detailEditBtn = document.getElementById('detail-edit-btn');
+                      if (detailEditBtn) {
+                        detailEditBtn.addEventListener('click', () => {
+                          const investmentId = investmentDetailModal.getAttribute('data-current-investment-id');
+                          if (!investmentId) {
+                            alert('ID do investimento não encontrado.');
+                            return;
+                          }
+
+                          const investmentToEdit = allInvestmentMetrics.find(inv => inv.id === investmentId);
+                          if (!investmentToEdit) {
+                            alert('Dados do investimento não encontrados para edição.');
+                            return;
+                          }
+
+                          // Populate the form
+                          document.getElementById('investment_id').value = investmentToEdit.id;
+                          document.getElementById('investment_name').value = investmentToEdit.investment_name || '';
+                          document.getElementById('asset_ticker_symbol').value = investmentToEdit.asset_ticker_symbol || '';
+                          document.getElementById('investment_type').value = investmentToEdit.investment_type || '';
+                          document.getElementById('investment_subtype').value = investmentToEdit.investment_subtype || '';
+                          document.getElementById('institution').value = investmentToEdit.institution || '';
+                          document.getElementById('account_identifier').value = investmentToEdit.account_identifier || '';
+                          document.getElementById('currency').value = investmentToEdit.currency || 'BRL';
+                          document.getElementById('status').value = investmentToEdit.status || 'Ativo';
+                          document.getElementById('risk_level').value = investmentToEdit.risk_level || '';
+                          document.getElementById('objective').value = investmentToEdit.objective || '';
+                          document.getElementById('notes').value = investmentToEdit.notes || '';
+
+                          // Populate initial_acquisition_date (if available on the main investment object)
+                          document.getElementById('initial_acquisition_date').value = investmentToEdit.acquisition_date && investmentToEdit.acquisition_date.seconds ? new Date(investmentToEdit.acquisition_date.seconds * 1000).toISOString().split('T')[0] : '';
+
+                          // Clear "initial" fields that are transaction-specific for new investments
+                          document.getElementById('initial_quantity').value = '';
+                          document.getElementById('initial_acquisition_price').value = '';
+                          document.getElementById('initial_fees_paid').value = '';
+
+                          // Trigger change on investment_type to show correct specific fields in the form
+                          document.getElementById('investment_type').dispatchEvent(new Event('change'));
+
+                          // Populate type-specific fields
+                          if (investmentToEdit.investment_type === 'Tesouro Direto' || investmentToEdit.investment_type === 'CDB' || investmentToEdit.investment_type === 'LCI' || investmentToEdit.investment_type === 'LCA' || investmentToEdit.investment_type === 'Debênture' || investmentToEdit.investment_type === 'Poupança') {
+                            document.getElementById('maturity_date').value = investmentToEdit.maturity_date && investmentToEdit.maturity_date.seconds ? new Date(investmentToEdit.maturity_date.seconds * 1000).toISOString().split('T')[0] : '';
+                            document.getElementById('interest_rate_type').value = investmentToEdit.interest_rate_type || '';
+                            document.getElementById('contracted_rate_percentage').value = investmentToEdit.contracted_rate_percentage || '';
+                            document.getElementById('indexer').value = investmentToEdit.indexer || '';
+                            document.getElementById('taxation_type').value = investmentToEdit.taxation_type || '';
+                            document.getElementById('is_fgc_covered').checked = investmentToEdit.is_fgc_covered || false;
+                          } else if (investmentToEdit.investment_type === 'Ação') {
+                            document.getElementById('stock_exchange').value = investmentToEdit.stock_exchange || '';
+                            document.getElementById('sector').value = investmentToEdit.sector || '';
+                            document.getElementById('cnpj_acao').value = investmentToEdit.cnpj_acao || '';
+                          } else if (investmentToEdit.investment_type === 'FII' || investmentToEdit.investment_type === 'ETF' || investmentToEdit.investment_type === 'Fundo de Investimento' || investmentToEdit.investment_type === 'Previdência Privada') {
+                            document.getElementById('fund_cnpj').value = investmentToEdit.fund_cnpj || '';
+                            document.getElementById('administrator_fee_percentage').value = investmentToEdit.administrator_fee_percentage || '';
+                            document.getElementById('performance_fee_percentage').value = investmentToEdit.performance_fee_percentage || '';
+                            document.getElementById('benchmark').value = investmentToEdit.benchmark || '';
+                          } else if (investmentToEdit.investment_type === 'Moeda Digital') {
+                            document.getElementById('crypto_asset_code').value = investmentToEdit.crypto_asset_code || '';
+                            document.getElementById('exchange_platform_wallet').value = investmentToEdit.exchange_platform_wallet || '';
+                          }
+
+                          document.getElementById('form-modal-title-id').textContent = 'Editar Investimento';
+                          investmentModal.classList.remove('hidden');
+                          investmentDetailModal.classList.add('hidden');
+                        });
+                      }
+                    // }); // This was the end of the original inner DOMContentLoaded
                 }
-                rowIndex++;
-            }
-        }
-
-        function updateDashboardSummary(allInvestmentMetricsOnly) { // Expects array of metrics objects
-          const portfolioSummary = calculatePortfolioSummary(allInvestmentMetricsOnly);
-
-          const formatCurrency = (value) => value !== undefined ? `R$ ${value.toFixed(2)}` : 'R$ -';
-          const formatPercentage = (value) => value !== undefined ? `${value.toFixed(2)}%` : '- %';
-
-          document.getElementById('db-total-patrimonio').innerHTML = `${formatCurrency(portfolioSummary.current_total_portfolio_value)} <span id="db-total-patrimonio-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span>`;
-          document.getElementById('db-total-investido').innerHTML = `${formatCurrency(portfolioSummary.total_invested_portfolio_all_time)} <span id="db-total-investido-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span>`;
-
-          const resultadoReaisEl = document.getElementById('db-resultado-reais');
-          resultadoReaisEl.innerHTML = `${formatCurrency(portfolioSummary.overall_portfolio_profit_loss_absolute)} <span id="db-resultado-reais-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span>`;
-          resultadoReaisEl.className = 'text-2xl font-semibold';
-          if (portfolioSummary.overall_portfolio_profit_loss_absolute > 0) resultadoReaisEl.classList.add('text-green-600');
-          else if (portfolioSummary.overall_portfolio_profit_loss_absolute < 0) resultadoReaisEl.classList.add('text-red-600');
-          else resultadoReaisEl.classList.add('text-gray-700');
-
-          const resultadoPercEl = document.getElementById('db-resultado-percentual');
-          resultadoPercEl.innerHTML = `${formatPercentage(portfolioSummary.overall_portfolio_profit_loss_percentage)} <span id="db-resultado-percentual-loader" class="hidden text-sm ml-2 text-gray-400">(...)</span>`;
-          resultadoPercEl.className = 'text-2xl font-semibold';
-          if (portfolioSummary.overall_portfolio_profit_loss_percentage > 0) resultadoPercEl.classList.add('text-green-600');
-          else if (portfolioSummary.overall_portfolio_profit_loss_percentage < 0) resultadoPercEl.classList.add('text-red-600');
-          else resultadoPercEl.classList.add('text-gray-700');
-        }
-
-        // --- Form Modal & Submission ---
-        const investmentForm = document.getElementById('investment-form');
-        const investmentModal = document.getElementById('investment-form-modal'); // Already defined for toggle
-        const addInvestmentBtn = document.getElementById('btn-add-new-investment'); // Already defined
-        const closeBtn = document.getElementById('modal-close-btn'); // Already defined
-        const cancelBtn = document.getElementById('modal-cancel-btn'); // Already defined
-        const modalTitleEl = document.getElementById('form-modal-title-id'); // Changed from 'modal-title'
-
-
-        addInvestmentBtn?.addEventListener('click', () => {
-          modalTitleEl.textContent = 'Adicionar Novo Investimento';
-          investmentForm.reset();
-          document.getElementById('investment_id').value = ''; // Clear hidden ID field
-          document.getElementById('rf-specific-fields').classList.add('hidden');
-          document.getElementById('acoes-specific-fields').classList.add('hidden');
-          document.getElementById('fundos-specific-fields').classList.add('hidden');
-          document.getElementById('crypto-specific-fields').classList.add('hidden');
-          investmentModal.classList.remove('hidden');
-        });
-
-        investmentForm.addEventListener('submit', async function(event) {
-          event.preventDefault();
-          if (!currentHouseholdId) {
-            alert("ID da Família não encontrado. Não é possível salvar.");
-            return;
-          }
-          const formData = new FormData(investmentForm);
-          const data = Object.fromEntries(formData.entries());
-
-          // Basic data processing
-          data.total_quantity = parseFloat(data.initial_quantity) || 0;
-          data.current_unit_price = parseFloat(data.initial_acquisition_price) || 0;
-          if (data.initial_acquisition_date) {
-            data.acquisition_date = firebase.firestore.Timestamp.fromDate(new Date(data.initial_acquisition_date));
-          } else {
-             data.acquisition_date = firebase.firestore.FieldValue.serverTimestamp(); // Default if not provided
-          }
-
-          const initialFees = parseFloat(formData.get('initial_fees_paid')) || 0;
-
-          // Remove form-specific fields not part of the main investment schema before saving to 'investments'
-          const coreInvestmentData = {...data};
-          delete coreInvestmentData.initial_quantity;
-          delete coreInvestmentData.initial_acquisition_price;
-          delete coreInvestmentData.initial_acquisition_date;
-          delete coreInvestmentData.initial_fees_paid;
-          // Type-specific fields are assumed to be part of 'data' and will be saved if present
-          // More sophisticated logic might be needed to clean them based on investment_type
-
-          const investmentId = coreInvestmentData.investment_id;
-          delete coreInvestmentData.investment_id;
-
-
-          const formMessage = document.getElementById('form-message');
-          try {
-            formMessage.textContent = 'Salvando...';
-            formMessage.className = 'mb-3 text-sm text-center text-blue-600';
-
-            if (investmentId) {
-              await updateHouseholdInvestment(currentHouseholdId, investmentId, coreInvestmentData);
-              formMessage.textContent = 'Investimento atualizado com sucesso!';
-            } else {
-              const newInvestmentId = await addHouseholdInvestment(currentHouseholdId, coreInvestmentData);
-              if (newInvestmentId && data.total_quantity > 0) {
-                  const initialTransaction = {
-                      transaction_type: 'Compra/Aporte',
-                      transaction_date: data.acquisition_date,
-                      quantity_transacted: data.total_quantity,
-                      price_per_unit_transacted: data.current_unit_price,
-                      fees_paid: initialFees
-                  };
-                  await addHouseholdInvestmentTransaction(currentHouseholdId, newInvestmentId, initialTransaction);
-              }
-              formMessage.textContent = 'Investimento adicionado com sucesso!';
-            }
-            formMessage.classList.replace('text-blue-600', 'text-green-600');
-            investmentForm.reset();
-            investmentModal.classList.add('hidden');
-            loadAndDisplayInvestments();
-          } catch (error) {
-            console.error("Error saving investment: ", error);
-            formMessage.textContent = `Erro ao salvar: ${error.message}`;
-            formMessage.classList.replace('text-blue-600', 'text-red-600');
-          }
-        });
-
-        // --- Detail Modal ---
-        const investmentDetailModal = document.getElementById('investment-detail-modal'); // Already defined
-        const detailCloseBtn = document.getElementById('detail-modal-close-btn'); // Already defined
-        const detailModalTitleEl = document.getElementById('detail-modal-title-id'); // Changed from 'detail-modal-title'
-
-        async function openInvestmentDetailModal(investmentId) {
-          if (!currentHouseholdId || !investmentId) return;
-
-          document.getElementById('detail-modal-title').textContent = 'Carregando Detalhes...';
-          document.getElementById('investment-detail-content').innerHTML = '<p class="text-center p-4">Carregando...</p>';
-          document.getElementById('transaction_log_body').innerHTML = '';
-          investmentDetailModal.classList.remove('hidden');
-
-          try {
-            const investments = await getHouseholdInvestments(currentHouseholdId);
-            const investment = investments.find(inv => inv.id === investmentId);
-
-            if (!investment) throw new Error('Investimento não encontrado.');
-
-            const transactions = await getHouseholdInvestmentTransactions(currentHouseholdId, investmentId);
-            const metrics = calculateInvestmentMetrics(transactions, investment.current_unit_price || '0');
-
-            detailModalTitleEl.textContent = `Detalhes: ${investment.investment_name}`;
-
-            // Populate #investment-detail-content (General)
-            document.getElementById('detail-investment_name').textContent = investment.investment_name || '-';
-            document.getElementById('detail-asset_ticker_symbol').textContent = investment.asset_ticker_symbol || '-';
-            document.getElementById('detail-investment_type').textContent = investment.investment_type || '-';
-            document.getElementById('detail-investment_subtype').textContent = investment.investment_subtype || '-';
-            document.getElementById('detail-institution').textContent = investment.institution || '-';
-            document.getElementById('detail-account_identifier').textContent = investment.account_identifier || '-';
-            document.getElementById('detail-currency').textContent = investment.currency || '-';
-            document.getElementById('detail-status').textContent = investment.status || '-';
-            document.getElementById('detail-risk_level').textContent = investment.risk_level || '-';
-            document.getElementById('detail-objective').textContent = investment.objective || '-';
-            document.getElementById('detail-notes').textContent = investment.notes || '-';
-
-            // Populate #investment-detail-content (Values & Quantities)
-            document.getElementById('detail-acquisition_date').textContent = investment.acquisition_date && investment.acquisition_date.seconds ? new Date(investment.acquisition_date.seconds * 1000).toLocaleDateString() : '-';
-            document.getElementById('detail-total_quantity').textContent = metrics.current_total_quantity !== undefined ? metrics.current_total_quantity.toFixed(2) : '-';
-            document.getElementById('detail-weighted_average_acquisition_price').textContent = metrics.weighted_average_acquisition_price !== undefined ? `R$ ${metrics.weighted_average_acquisition_price.toFixed(2)}` : '-';
-            document.getElementById('detail-total_invested_amount').textContent = metrics.cost_basis_current_holdings !== undefined ? `R$ ${metrics.cost_basis_current_holdings.toFixed(2)}` : '-'; // Using cost_basis_current_holdings for "Total Investido Atual"
-            document.getElementById('detail-current_unit_price').textContent = investment.current_unit_price ? `R$ ${parseFloat(investment.current_unit_price).toFixed(2)}` : '-';
-            document.getElementById('detail-current_total_value').textContent = metrics.market_value_current_holdings !== undefined ? `R$ ${metrics.market_value_current_holdings.toFixed(2)}` : '-';
-            document.getElementById('detail-profit_loss_absolute').textContent = metrics.profit_loss_absolute !== undefined ? `R$ ${metrics.profit_loss_absolute.toFixed(2)}` : '-';
-            document.getElementById('detail-profit_loss_percentage').textContent = metrics.profit_loss_percentage !== undefined ? `${metrics.profit_loss_percentage.toFixed(2)}%` : '-';
-            // % Portfolio will be filled by a separate function after all data is loaded for the main table
-
-            // Show/hide and populate type-specific fields
-            ['detail-rf-specific-fields', 'detail-acoes-specific-fields', 'detail-fundos-specific-fields', 'detail-crypto-specific-fields'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            if (investment.investment_type === 'Tesouro Direto' || investment.investment_type === 'CDB' || investment.investment_type === 'LCI' || investment.investment_type === 'LCA' || investment.investment_type === 'Debênture' || investment.investment_type === 'Poupança') {
-                document.getElementById('detail-rf-specific-fields').classList.remove('hidden');
-                document.getElementById('detail-maturity_date').textContent = investment.maturity_date && investment.maturity_date.seconds ? new Date(investment.maturity_date.seconds * 1000).toLocaleDateString() : '-';
-                document.getElementById('detail-interest_rate_type').textContent = investment.interest_rate_type || '-';
-                document.getElementById('detail-contracted_rate_percentage').textContent = investment.contracted_rate_percentage ? `${investment.contracted_rate_percentage}%` : '-';
-                document.getElementById('detail-indexer').textContent = investment.indexer || '-';
-                document.getElementById('detail-taxation_type').textContent = investment.taxation_type || '-';
-                document.getElementById('detail-is_fgc_covered').textContent = investment.is_fgc_covered ? 'Sim' : 'Não';
-            } // Add else if for other types
-
-            const transactionTbody = document.getElementById('transaction_log_body');
-            transactionTbody.innerHTML = '';
-            if (transactions.length > 0) {
-              transactions.forEach(tx => {
-                const row = transactionTbody.insertRow();
-                row.insertCell().textContent = tx.transaction_date && tx.transaction_date.seconds ? new Date(tx.transaction_date.seconds * 1000).toLocaleDateString() : '-';
-                row.insertCell().textContent = tx.transaction_type || '-';
-                row.insertCell().textContent = tx.quantity_transacted !== undefined ? tx.quantity_transacted.toFixed(2) : '-';
-                row.insertCell().textContent = tx.price_per_unit_transacted !== undefined ? `R$ ${parseFloat(tx.price_per_unit_transacted).toFixed(2)}` : '-';
-                row.insertCell().textContent = (tx.quantity_transacted !== undefined && tx.price_per_unit_transacted !== undefined) ? `R$ ${(parseFloat(tx.quantity_transacted) * parseFloat(tx.price_per_unit_transacted)).toFixed(2)}` : '-';
-                row.insertCell().textContent = tx.fees_paid !== undefined ? `R$ ${(parseFloat(tx.fees_paid) || 0).toFixed(2)}` : '-';
-                const netAmount = (tx.quantity_transacted !== undefined && tx.price_per_unit_transacted !== undefined) ? (parseFloat(tx.quantity_transacted) * parseFloat(tx.price_per_unit_transacted)) - (parseFloat(tx.fees_paid) || 0) : 0;
-                row.insertCell().textContent = `R$ ${netAmount.toFixed(2)}`;
-              });
-            } else {
-              transactionTbody.innerHTML = '<tr><td colspan="7" class="p-2 text-center text-gray-500">Nenhuma transação registrada.</td></tr>';
-            }
-            investmentDetailModal.setAttribute('data-current-investment-id', investmentId);
-
-          } catch (error) {
-            console.error("Error opening investment detail: ", error);
-            document.getElementById('investment-detail-content').innerHTML = `<p class="text-red-500 p-4 text-center">Erro ao carregar detalhes: ${error.message}</p>`;
-          }
-        }
-
-        async function handleDeleteInvestment(investmentId) {
-          if (!currentHouseholdId || !investmentId) return;
-          if (confirm(`Tem certeza que deseja excluir este investimento e todas as suas transações? Esta ação não pode ser desfeita.`)) {
-            try {
-              const transactions = await getHouseholdInvestmentTransactions(currentHouseholdId, investmentId);
-              for (const tx of transactions) {
-                await deleteHouseholdInvestmentTransaction(currentHouseholdId, investmentId, tx.id);
-              }
-              await deleteHouseholdInvestment(currentHouseholdId, investmentId);
-              alert('Investimento e suas transações foram excluídos com sucesso!');
-              loadAndDisplayInvestments();
-              investmentDetailModal.classList.add('hidden'); // Close detail modal if open
-            } catch (error) {
-              console.error("Error deleting investment: ", error);
-              alert(`Erro ao excluir investimento: ${error.message}`);
-            }
-          }
-        }
-
-        function openTransactionFormModal(investmentId) {
-            alert(`Funcionalidade "Adicionar Transação" para o investimento ID: ${investmentId} ainda não implementada.\nIsso abriria um formulário para adicionar uma nova transação a este investimento.`);
-            // Implementation:
-            // 1. Get a reference to a dedicated transaction form modal (needs to be created in HTML).
-            // 2. Pre-fill the investmentId in that form.
-            // 3. Display the transaction form modal.
-            // 4. Handle its submission to call addHouseholdInvestmentTransaction().
-        }
-
-        // Initial Page Load
-        window.addEventListener('DOMContentLoaded', () => {
-          initializeHouseholdContext();
-          if (currentHouseholdId) {
-            loadAndDisplayInvestments();
-          } else {
-            const listBody = document.getElementById('investments-table-body'); // Corrected from getElementsByTagName
-            if(listBody) listBody.innerHTML = '<tr><td colspan="15" class="p-4 text-center text-red-500">ID da Família não encontrado na URL. Verifique o link de acesso ou selecione uma família.</td></tr>';
-            updateDashboardSummary([]);
-          }
-
-          // Event listeners for modals (already defined in previous steps, ensure they are here)
-          // Form Modal
-          closeBtn?.addEventListener('click', () => investmentModal.classList.add('hidden'));
-          cancelBtn?.addEventListener('click', () => investmentModal.classList.add('hidden'));
-          investmentModal?.addEventListener('click', (event) => {
-            if (event.target === investmentModal) investmentModal.classList.add('hidden');
-          });
-          // Detail Modal
-          detailCloseBtn?.addEventListener('click', () => investmentDetailModal.classList.add('hidden'));
-          investmentDetailModal?.addEventListener('click', (event) => {
-            if (event.target === investmentDetailModal) investmentDetailModal.classList.add('hidden');
-          });
-          // Escape key
-          document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') closeAllModals();
-          });
-           // Dynamic fields for form modal
-          investmentTypeSelect?.addEventListener('change', function() {
-            const type = this.value;
-            document.getElementById('rf-specific-fields').classList.add('hidden');
-            document.getElementById('acoes-specific-fields').classList.add('hidden');
-            document.getElementById('fundos-specific-fields').classList.add('hidden');
-            document.getElementById('crypto-specific-fields').classList.add('hidden');
-
-            if (type === 'Tesouro Direto' || type === 'CDB' || type === 'LCI' || type === 'LCA' || type === 'Debênture' || type === 'Poupança') {
-                document.getElementById('rf-specific-fields').classList.remove('hidden');
-            } else if (type === 'Ação') {
-                document.getElementById('acoes-specific-fields').classList.remove('hidden');
-            } else if (type === 'FII' || type === 'ETF' || type === 'Fundo de Investimento' || type === 'Previdência Privada') { // Added Previdência to Fundos
-                document.getElementById('fundos-specific-fields').classList.remove('hidden');
-            } else if (type === 'Moeda Digital') {
-                document.getElementById('crypto-specific-fields').classList.remove('hidden');
-            }
-          });
-           // Sample view button - This is conceptual if rows are dynamic.
-           // Event delegation on tbody would be better for dynamic rows.
-          const sampleViewButton = document.querySelector('#investments-table-body tr:not(#investments-table-loading) button[title="Ver Detalhes/Editar"]');
-          sampleViewButton?.addEventListener('click', (event) => {
-            openInvestmentDetailModal('sampleInvestmentId');
-          });
-
-          const detailEditBtn = document.getElementById('detail-edit-btn');
-          if (detailEditBtn) {
-            detailEditBtn.addEventListener('click', () => {
-              const investmentId = investmentDetailModal.getAttribute('data-current-investment-id');
-              if (!investmentId) {
-                alert('ID do investimento não encontrado.');
-                return;
-              }
-
-              const investmentToEdit = allInvestmentMetrics.find(inv => inv.id === investmentId);
-              if (!investmentToEdit) {
-                alert('Dados do investimento não encontrados para edição.');
-                return;
-              }
-
-              // Populate the form
-              document.getElementById('investment_id').value = investmentToEdit.id;
-              document.getElementById('investment_name').value = investmentToEdit.investment_name || '';
-              document.getElementById('asset_ticker_symbol').value = investmentToEdit.asset_ticker_symbol || '';
-              document.getElementById('investment_type').value = investmentToEdit.investment_type || '';
-              document.getElementById('investment_subtype').value = investmentToEdit.investment_subtype || '';
-              document.getElementById('institution').value = investmentToEdit.institution || '';
-              document.getElementById('account_identifier').value = investmentToEdit.account_identifier || '';
-              document.getElementById('currency').value = investmentToEdit.currency || 'BRL';
-              document.getElementById('status').value = investmentToEdit.status || 'Ativo';
-              document.getElementById('risk_level').value = investmentToEdit.risk_level || '';
-              document.getElementById('objective').value = investmentToEdit.objective || '';
-              document.getElementById('notes').value = investmentToEdit.notes || '';
-
-              // Populate initial_acquisition_date (if available on the main investment object)
-              document.getElementById('initial_acquisition_date').value = investmentToEdit.acquisition_date && investmentToEdit.acquisition_date.seconds ? new Date(investmentToEdit.acquisition_date.seconds * 1000).toISOString().split('T')[0] : '';
-
-              // Clear "initial" fields that are transaction-specific for new investments
-              document.getElementById('initial_quantity').value = '';
-              document.getElementById('initial_acquisition_price').value = '';
-              document.getElementById('initial_fees_paid').value = '';
-
-              // Trigger change on investment_type to show correct specific fields in the form
-              document.getElementById('investment_type').dispatchEvent(new Event('change'));
-
-              // Populate type-specific fields
-              if (investmentToEdit.investment_type === 'Tesouro Direto' || investmentToEdit.investment_type === 'CDB' || investmentToEdit.investment_type === 'LCI' || investmentToEdit.investment_type === 'LCA' || investmentToEdit.investment_type === 'Debênture' || investmentToEdit.investment_type === 'Poupança') {
-                document.getElementById('maturity_date').value = investmentToEdit.maturity_date && investmentToEdit.maturity_date.seconds ? new Date(investmentToEdit.maturity_date.seconds * 1000).toISOString().split('T')[0] : '';
-                document.getElementById('interest_rate_type').value = investmentToEdit.interest_rate_type || '';
-                document.getElementById('contracted_rate_percentage').value = investmentToEdit.contracted_rate_percentage || '';
-                document.getElementById('indexer').value = investmentToEdit.indexer || '';
-                document.getElementById('taxation_type').value = investmentToEdit.taxation_type || '';
-                document.getElementById('is_fgc_covered').checked = investmentToEdit.is_fgc_covered || false;
-              } else if (investmentToEdit.investment_type === 'Ação') {
-                document.getElementById('stock_exchange').value = investmentToEdit.stock_exchange || '';
-                document.getElementById('sector').value = investmentToEdit.sector || '';
-                document.getElementById('cnpj_acao').value = investmentToEdit.cnpj_acao || '';
-              } else if (investmentToEdit.investment_type === 'FII' || investmentToEdit.investment_type === 'ETF' || investmentToEdit.investment_type === 'Fundo de Investimento' || investmentToEdit.investment_type === 'Previdência Privada') {
-                document.getElementById('fund_cnpj').value = investmentToEdit.fund_cnpj || '';
-                document.getElementById('administrator_fee_percentage').value = investmentToEdit.administrator_fee_percentage || '';
-                document.getElementById('performance_fee_percentage').value = investmentToEdit.performance_fee_percentage || '';
-                document.getElementById('benchmark').value = investmentToEdit.benchmark || '';
-              } else if (investmentToEdit.investment_type === 'Moeda Digital') {
-                document.getElementById('crypto_asset_code').value = investmentToEdit.crypto_asset_code || '';
-                document.getElementById('exchange_platform_wallet').value = investmentToEdit.exchange_platform_wallet || '';
-              }
-
-              document.getElementById('form-modal-title-id').textContent = 'Editar Investimento';
-              investmentModal.classList.remove('hidden');
-              investmentDetailModal.classList.add('hidden');
             });
-          }
+
         });
     </script>
 
