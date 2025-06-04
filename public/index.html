@@ -4,35 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gestão de Lançamentos</title>
-  <script defer src="/__/firebase/11.8.1/firebase-app-compat.js"></script>
-  <script defer src="/__/firebase/11.8.1/firebase-auth-compat.js"></script>
-  <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-  <style>body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; color: #333; } .container { text-align: center; } p { font-size: 1.2em; } </style>
+  <!-- Opcional: Adicionar um redirecionamento via meta tag se desejar -->
+  <!-- <meta http-equiv="refresh" content="0;url=/home"> -->
+  <style>body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; color: #333; } .container { text-align: center; } </style>
 </head>
 <body>
   <div class="container">
-    <p id="load-message">Carregando...</p>
+    <p>Redirecionando para a página principal...</p>
+    <!-- Ou pode ser uma página em branco ou com uma mensagem mínima,
+         já que firebase.json agora lida com o roteamento de '/' para home.html -->
   </div>
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      try {
-        let app = firebase.app();
-        document.getElementById("load-message").textContent = "Verificando autenticação...";
-
-        firebase.auth().onAuthStateChanged(user => {
-          if (user) {
-            // User is signed in, redirect to /home.
-            window.location.href = "/home";
-          } else {
-            // No user is signed in, redirect to /login.
-            window.location.href = "/login";
-          }
-        });
-      } catch (e) {
-        console.error("Firebase SDK loading error:", e);
-        document.getElementById("load-message").textContent = "Erro ao carregar. Verifique o console.";
-      }
-    });
-  </script>
+  <!-- Scripts do Firebase removidos pois o redirecionamento principal é feito pelo firebase.json -->
 </body>
 </html>
