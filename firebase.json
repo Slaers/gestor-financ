@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist",
+    "public": "gestao-de-lancamentos",
     "ignore": [
       "firebase.json",
       "**/.*",
