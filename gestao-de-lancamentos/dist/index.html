@@ -1,13 +1,1693 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark"> 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor Financeiro Compartilhado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Chart container styling é feito via Tailwind no HTML agora */
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1); /* Light mode spinner track */
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #0ea5e9; /* sky-500 */
+            animation: spin 1s ease infinite;
+        }
+        .dark .loading-spinner {
+            border-left-color: #38bdf8; /* sky-400 for dark mode */
+            border-top-color: rgba(255,255,255,0.1);
+            border-right-color: rgba(255,255,255,0.1);
+            border-bottom-color: rgba(255,255,255,0.1);
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .hidden { display: none !important; } /* Renomeado de hidden-section para hidden para consistência com Tailwind */
+        
+        /* Custom scrollbar for webkit browsers */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; /* slate-100 */ border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; /* slate-300 */ border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; /* slate-400 */ }
+
+        /* Dark mode scrollbar */
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; /* slate-800 */ }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; /* slate-600 */ }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; /* slate-500 */ }
+
+        /* Chart.js dark mode tooltip and legend */
+        .chartjs-tooltip {
+            background: rgba(30, 41, 59, 0.9); /* slate-800 com opacidade */
+            color: #e2e8f0; /* slate-200 */
+            border-radius: 0.375rem; /* rounded-md */
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        .chartjs-tooltip-key {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body class="font-sans bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-colors duration-300">
+    <nav id="desktop-sidebar-menu" class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-800 shadow-xl z-40 transform -translate-x-full transition-transform duration-300 ease-in-out hidden lg:flex flex-col p-4 space-y-2">
+        <div class="flex justify-between items-center mb-2">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Menu</h2>
+            <button id="close-desktop-sidebar-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </nav>
+    <nav id="mobile-overlay-menu" class="fixed inset-0 bg-white dark:bg-slate-800 p-4 z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden flex-col space-y-2 lg:hidden"> {/* Changed z-40 to z-50 */}
+        <div class="flex justify-between items-center mb-2">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Menu</h2>
+            <button id="close-mobile-overlay-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </nav>
+    <div id="loading-overlay" class="fixed inset-0 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-center z-[9999] hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div id="auth-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 p-4 hidden">
+        <div class="w-full max-w-md">
+            <div class="bg-white dark:bg-slate-700/80 backdrop-blur-sm p-8 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40 mb-6">
+                <h2 id="auth-title" class="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-2">Login</h2>
+                <p id="auth-subtitle" class="text-center text-slate-500 dark:text-slate-400 mb-8">Acesse seu painel financeiro.</p>
+                <form id="login-form" class="">
+                    <div class="mb-4"><label for="login-email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label><input type="email" id="login-email" required class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" placeholder="seu@email.com"></div>
+                    <div class="mb-6"><label for="login-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Senha</label><input type="password" id="login-password" required class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" placeholder="••••••••"></div>
+                    <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] mb-4 shadow-md dark:shadow-black/30">Entrar</button>
+                    <p id="login-error" class="text-rose-500 dark:text-rose-400 text-sm text-center h-4"></p>
+                </form>
+                <form id="register-form" class="hidden">
+                    <div class="mb-4"><label for="register-email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label><input type="email" id="register-email" required class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" placeholder="seu@email.com"></div>
+                    <div class="mb-4"><label for="register-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Senha</label><input type="password" id="register-password" required class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" placeholder="Mínimo 6 caracteres"></div>
+                    <div class="mb-6"><label for="register-confirm-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirmar Senha</label><input type="password" id="register-confirm-password" required class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" placeholder="Repita a senha"></div>
+                    <button type="submit" class="w-full bg-emerald-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] mb-4 shadow-md dark:shadow-black/30">Registrar</button>
+                    <p id="register-error" class="text-rose-500 dark:text-rose-400 text-sm text-center h-4"></p>
+                </form>
+                </div>
+            <p class="text-center text-sm text-slate-600 dark:text-slate-400">
+                <span id="auth-prompt-login">Não tem uma conta? <button id="show-register-form-btn" class="font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 hover:underline">Registre-se</button></span>
+                <span id="auth-prompt-register" class="hidden">Já tem uma conta? <button id="show-login-form-btn" class="font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 hover:underline">Faça Login</button></span>
+            </p>
+        </div>
+    </div>
+
+    <div id="household-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 p-4 hidden">
+        <div class="w-full max-w-lg bg-white dark:bg-slate-700/80 backdrop-blur-sm p-6 sm:p-8 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40">
+            <div class="flex justify-between items-center mb-6">
+                 <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Configurar Compartilhamento</h2>
+                 <button id="back-to-app-btn" class="text-sm bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.03]">Voltar ao Painel</button>
+            </div>
+            <div id="create-household-section">
+                <p class="text-slate-600 dark:text-slate-400 mb-4">Você ainda não faz parte de uma família/grupo. Crie um novo para compartilhar seus lançamentos.</p>
+                <input type="text" id="household-name" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors mb-4" placeholder="Nome da Família (ex: Família Silva)">
+                <button id="create-household-btn" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Criar Família e Começar</button>
+                <p id="household-error" class="text-rose-500 dark:text-rose-400 text-sm text-center h-4 mt-2"></p>
+            </div>
+            <div id="manage-household-section" class="hidden">
+                <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-1">Minha Família: <span id="display-household-name" class="font-medium text-sky-700 dark:text-sky-400"></span></h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">ID: <code id="display-household-id" class="bg-slate-200 dark:bg-slate-600 dark:text-slate-300 p-0.5 rounded text-xs"></code></p>
+                <form id="invite-member-form" class="mb-8">
+                    <label for="invite-email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Convidar Membro por Email</label>
+                    <div class="flex gap-2">
+                        <input type="email" id="invite-email" required class="flex-grow p-3 sm:py-3.5 sm:px-4 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" placeholder="email@example.com">
+                        <button type="submit" class="bg-emerald-500 text-white font-semibold py-3 sm:py-3.5 px-4 sm:px-5 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Convidar</button>
+                    </div>
+                    <p id="invite-status" class="text-emerald-600 dark:text-emerald-400 text-sm text-center h-4 mt-2"></p>
+                </form>
+                <div>
+                     <h4 class="text-md font-semibold text-slate-700 dark:text-slate-300 mb-2">Membros Atuais:</h4>
+                     <ul id="household-members-list" class="list-disc list-inside text-slate-600 dark:text-slate-400 pl-2 space-y-1"></ul>
+                </div>
+                <!-- Botão Excluir Família movido para depois da lista e estilizado -->
+                <div class="flex justify-end mt-4">
+                    <button id="disband-family-btn" class="bg-red-600 text-white font-semibold text-sm py-1 px-3 rounded-lg hover:bg-red-700 dark:hover:bg-red-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30 hidden">Excluir Família</button>
+                </div>
+                <button id="leave-family-btn" class="hidden bg-rose-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-rose-600 dark:hover:bg-rose-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30 mt-4 w-full sm:w-auto">Sair da Família</button>
+            </div>
+             <div id="accept-invite-section" class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-600 hidden">
+                <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">Convites Pendentes</h3>
+                <div id="pending-invites-list" class="space-y-3"></div>
+                <p id="no-pending-invites-msg" class="text-slate-500 dark:text-slate-400 mt-2">Você não tem convites pendentes no momento.</p>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="app-content" class="hidden container mx-auto p-4 sm:p-6 md:p-8">
+        <header class="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4 lg:gap-6 sticky top-0 bg-white dark:bg-slate-800 z-30 py-4"> <!-- Added sticky, z-index, bg, and py-4 for padding -->
+            <div class="flex items-center justify-center lg:justify-start flex-grow lg:flex-grow-0 gap-2">
+                <button id="universal-hamburger-button" class="p-2 text-slate-700 dark:text-slate-300 hover:text-sky-500 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 rounded-md z-50">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+                <div class="text-center lg:text-left">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Painel Financeiro</h1>
+                    <p id="user-greeting" class="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">Gestão de Lançamentos do Mês</p>
+                </div>
+            </div>
+            <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:flex-wrap items-center justify-center lg:justify-end gap-2 sm:gap-3 w-full lg:w-auto">
+                <div id="user-info" class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 hidden order-first lg:order-none w-full lg:w-auto text-center lg:text-right mb-2 sm:mb-0 lg:mr-2"></div>
+            <div class="hidden lg:flex items-center gap-2 sm:gap-3">
+                    <select id="month-filter" class="bg-white dark:bg-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm dark:shadow-black/30 py-2 px-3 text-sm focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:outline-none w-full sm:w-auto sm:flex-shrink-0">
+                    </select>
+                    <button id="add-transaction-btn" class="bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-slate-600 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm w-full sm:w-auto sm:flex-shrink-0">
+                        <span class="text-lg">+</span>
+                        <span>Adicionar</span>
+                    </button>
+                    <button id="manage-family-btn" class="bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-slate-600 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm w-full sm:w-auto sm:flex-shrink-0">
+                     <span>&#128106;</span> <span>Família</span>
+                </button>
+                <button id="logout-btn" class="bg-rose-500 text-white font-semibold py-2 px-4 rounded-lg shadow-sm dark:shadow-black/30 hover:bg-rose-600 dark:hover:bg-rose-400 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm w-full sm:w-auto sm:flex-shrink-0">
+                    <span>Sair</span>
+                    <span class="text-xl">&#x23CF;</span> 
+                </button>
+            </div>
+        </header>
+        <main class="pt-20"> <!-- Added pt-20 for sticky header offset -->
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Receitas Totais</h2><p id="total-income" class="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">R$ 0,00</p></div>
+                <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Despesas Totais</h2><p id="total-expense" class="text-2xl sm:text-3xl font-bold text-rose-600 dark:text-rose-400 mt-2">R$ 0,00</p></div>
+                <div class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h2 class="text-sm font-medium text-slate-500 dark:text-slate-400">Saldo do Mês</h2><p id="balance" class="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-300 mt-2">R$ 0,00</p></div>
+            </section>
+            <section class="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8 mb-6 sm:mb-8">
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Despesas por Categoria</h3><div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]"><canvas id="expenses-by-category-chart"></canvas></div></div>
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Receitas por Categoria</h3>
+                    <div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]">
+                        <canvas id="incomes-by-category-chart"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-1 bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700"><h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Receitas vs Despesas</h3><div class="relative w-full h-[280px] max-h-[35vh] md:h-[320px] lg:h-[350px]"><canvas id="income-vs-expense-chart"></canvas></div></div>
+            </section>
+            <section class="bg-white dark:bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-xl dark:shadow-lg dark:shadow-black/40 border border-slate-200 dark:border-slate-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200">Últimos Lançamentos</h3>
+                    </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full min-w-[640px] text-left">
+                        <thead class="border-b-2 border-slate-200 dark:border-slate-700">
+                            <tr>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Data</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Descrição</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Categoria</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Tipo Pagamento</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Valor</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Lançado por</th>
+                                <th class="p-3 text-sm font-semibold text-slate-500 dark:text-slate-400 text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-table-body"></tbody>
+                    </table>
+                     <p id="no-transactions-msg" class="text-center text-slate-500 dark:text-slate-400 py-8">Nenhum lançamento para o período selecionado.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="investments-section" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 p-4 hidden">
+        <div class="w-full max-w-4xl bg-white dark:bg-slate-700/80 backdrop-blur-sm p-6 sm:p-8 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Meus Investimentos</h2>
+                <button id="back-to-app-from-investments-btn" class="text-sm bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 transition-all duration-150 ease-in-out hover:scale-[1.03]">Voltar ao Painel</button>
+            </div>
+            <div class="mb-6">
+                <button id="add-investment-account-btn" class="bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-sky-700 dark:hover:bg-sky-500 transition-colors">
+                    + Adicionar Conta de Investimento
+                </button>
+            </div>
+            <div id="investment-accounts-list">
+                <p class="text-slate-500 dark:text-slate-400">Nenhuma conta de investimento adicionada ainda.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-investment-account-modal" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div id="add-investment-account-modal-content" class="bg-white dark:bg-slate-700 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40 w-full max-w-md p-6 sm:p-8 transform transition-all scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="add-investment-account-modal-title" class="text-2xl font-bold text-slate-900 dark:text-slate-100">Nova Conta de Investimento</h2>
+                <button id="close-add-investment-account-modal-btn" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 text-3xl leading-none transition-colors duration-150 ease-in-out">&times;</button>
+            </div>
+            <form id="add-investment-account-form">
+                <div class="mb-4">
+                    <label for="investment-account-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome da Conta</label>
+                    <input type="text" id="investment-account-name" name="name" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                </div>
+                <div class="mb-4">
+                    <label for="investment-account-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Investimento</label>
+                    <select id="investment-account-type" name="type" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                        <option value="fgts">FGTS</option>
+                        <option value="poupanca">Poupança</option>
+                        <option value="cdb">CDB/Renda Fixa</option>
+                        <option value="acoes">Ações/Renda Variável</option>
+                        <option value="fii">Fundos Imobiliários</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="investment-account-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição (Opcional)</label>
+                    <textarea id="investment-account-description" name="description" rows="3" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors"></textarea>
+                </div>
+                <div class="mb-6">
+                    <label for="investment-account-initial-amount" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Aporte Inicial (R$) (Opcional)</label>
+                    <input type="number" step="0.01" id="investment-account-initial-amount" name="initialAmount" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors">
+                </div>
+                <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Salvar Conta de Investimento</button>
+                <p id="add-investment-account-error" class="text-rose-500 dark:text-rose-400 text-sm text-center h-4 mt-2"></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-investment-entry-modal" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div id="add-investment-entry-modal-content" class="bg-white dark:bg-slate-700 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40 w-full max-w-md p-6 sm:p-8 transform transition-all scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="add-investment-entry-modal-title" class="text-2xl font-bold text-slate-900 dark:text-slate-100">Adicionar Movimentação</h2>
+                <button id="close-add-investment-entry-modal-btn" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 text-3xl leading-none transition-colors duration-150 ease-in-out">&times;</button>
+            </div>
+            <form id="add-investment-entry-form">
+                <input type="hidden" id="investment-entry-accountId" name="investmentAccountId">
+                <div class="mb-4">
+                    <label for="investment-entry-date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data</label>
+                    <input type="date" id="investment-entry-date" name="date" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                </div>
+                <div class="mb-4">
+                    <label for="investment-entry-amount" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor (R$)</label>
+                    <input type="number" step="0.01" id="investment-entry-amount" name="amount" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                </div>
+                <div class="mb-4">
+                    <label for="investment-entry-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Movimentação</label>
+                    <select id="investment-entry-type" name="entryType" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors" required>
+                        <option value="aporte_mensal">Aporte Mensal</option>
+                        <option value="aporte_inicial">Aporte Inicial</option>
+                        <option value="deposito_fgts">Depósito FGTS</option>
+                        <option value="rendimento">Rendimento</option>
+                        <option value="resgate">Resgate</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label for="investment-entry-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição (Opcional)</label>
+                    <textarea id="investment-entry-description" name="description" rows="3" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 outline-none transition-colors"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Salvar Movimentação</button>
+                <p id="add-investment-entry-error" class="text-rose-500 dark:text-rose-400 text-sm text-center h-4 mt-2"></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div id="modal-content" class="bg-white dark:bg-slate-700 rounded-xl shadow-2xl dark:shadow-xl dark:shadow-black/40 w-full max-w-md p-6 sm:p-8 transform transition-all scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Novo Lançamento</h2><button id="close-modal-btn" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 text-3xl leading-none transition-colors duration-150 ease-in-out">&times;</button></div>
+            <form id="transaction-form">
+                <div class="mb-4"> <label for="transaction-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo</label>
+                    <select id="transaction-type" name="type" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required><option value="Despesa">Despesa</option><option value="Receita">Receita</option></select>
+                </div>
+                <div class="mb-4"><label for="transaction-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição</label><input type="text" id="transaction-description" name="description" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required></div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div><label for="transaction-amount" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor</label><input type="number" step="0.01" id="transaction-amount" name="amount" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 dark:placeholder-slate-500 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required></div>
+                    <div><label for="transaction-date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data</label><input type="date" id="transaction-date" name="date" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required></div>
+                </div>
+                 <div class="mb-6"><label for="transaction-category" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Categoria</label><select id="transaction-category" name="category" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required></select></div>
+                <div class="mb-6">
+                    <label for="transaction-payment-type" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Pagamento</label>
+                    <select id="transaction-payment-type" name="paymentType" class="w-full p-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg shadow-sm dark:shadow-black/30 focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 outline-none transition-colors" required>
+                        <option value="" disabled selected>Selecione o tipo</option>
+                        <option value="PIX">PIX</option>
+                        <option value="Credito">Crédito</option>
+                        <option value="Debito">Débito</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-sky-700 dark:hover:bg-sky-500 transition-all duration-150 ease-in-out hover:scale-[1.02] active:scale-[0.98] shadow-md dark:shadow-black/30">Salvar Lançamento</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, initializeAuth, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; 
+        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, setLogLevel, writeBatch, getDoc, updateDoc, arrayUnion, getDocs, where, runTransaction, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
+        import { getNavigationLinks } from './public/js/navigation.js';
+
+        // Firebase and DOM Elements (condensed for brevity in thought process)
+        // ... (all the variable declarations from firebaseConfigProvided down to transactionDateInput)
+
+        // Universal Menu Element Selectors
+        const universalHamburgerButton = document.getElementById('universal-hamburger-button');
+        const desktopSidebarMenu = document.getElementById('desktop-sidebar-menu');
+        const closeDesktopSidebarButton = document.getElementById('close-desktop-sidebar-button');
+        // const desktopSidebarFamilyLink = document.getElementById('desktop-sidebar-family-link'); // Will be removed
+        const mobileOverlayMenu = document.getElementById('mobile-overlay-menu');
+        const closeMobileOverlayButton = document.getElementById('close-mobile-overlay-button');
+        // const mobileOverlayFamilyLink = document.getElementById('mobile-overlay-family-link'); // Will be removed
+        const manageFamilyBtn = document.getElementById('manage-family-btn'); // Used by menu "Família" links
+
+        let pendingManageFamilyAction = false; // Flag for deferred action
+
+        function populateMenus() {
+            const desktopMenuContainer = document.getElementById('desktop-sidebar-menu');
+            const mobileMenuContainer = document.getElementById('mobile-overlay-menu');
+
+            // Clear existing dynamic links (anchor tags that are direct children)
+            // Keep header and close button for desktop
+            if (desktopMenuContainer) {
+                Array.from(desktopMenuContainer.children).forEach(child => {
+                    if (child.tagName === 'A') {
+                        desktopMenuContainer.removeChild(child);
+                    }
+                });
+            }
+            // Keep header and close button for mobile
+             if (mobileMenuContainer) {
+                Array.from(mobileMenuContainer.children).forEach(child => {
+                    if (child.tagName === 'A') {
+                        mobileMenuContainer.removeChild(child);
+                    }
+                });
+            }
+
+            const links = getNavigationLinks('/'); // Current page is root
+
+            links.forEach(linkInfo => {
+                // Create for Desktop
+                if (desktopMenuContainer) {
+                    const aDesktop = document.createElement('a');
+                    aDesktop.href = linkInfo.href;
+                    aDesktop.textContent = linkInfo.text;
+                    aDesktop.className = 'block py-2 px-3 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-50 rounded-md';
+                    if (linkInfo.href.includes('action=manageFamily')) {
+                        // The manageFamilyBtn.click() logic is now triggered by the main manageFamilyBtn
+                        // on the header for desktop, and this sidebar link will navigate and trigger URL param logic.
+                        // If specific sidebar button behavior is needed, it would be added here or by ID.
+                        // For now, relying on URL param and main button.
+                    }
+                    desktopMenuContainer.appendChild(aDesktop);
+                }
+
+                // Create for Mobile
+                if (mobileMenuContainer) {
+                    const aMobile = document.createElement('a');
+                    aMobile.href = linkInfo.href;
+                    aMobile.textContent = linkInfo.text;
+                    aMobile.className = 'block py-3 px-4 text-lg text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-sky-700 hover:text-sky-600 dark:hover:text-sky-300 rounded-md';
+                     if (linkInfo.href.includes('action=manageFamily')) {
+                        // Similar to desktop, relying on URL param logic.
+                        // Mobile specific family link behavior could be added here if needed.
+                    }
+                    mobileMenuContainer.appendChild(aMobile);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateMenus(); // Populate menus after DOM is ready
+            const loadingOverlay = document.getElementById('loading-overlay');
+
+            // Check for URL parameters to trigger actions
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+
+            if (action === 'manageFamily') {
+                pendingManageFamilyAction = true; // Set flag instead of immediate click
+                // Optional: Clean URL immediately if preferred, or after action is done.
+                // history.replaceState(null, '', window.location.pathname);
+            }
+            
+            const firebaseConfigProvided = {
+                apiKey: "AIzaSyBEE49m18ujHj2MneCZKVoyuKgrV5okCYA",
+                authDomain: "gestao-de-lancamentos.firebaseapp.com",
+                projectId: "gestao-de-lancamentos",
+                storageBucket: "gestao-de-lancamentos.firebasestorage.app",
+                messagingSenderId: "489670680660",
+                appId: "1:489670680660:web:90e7a533fabcfaec620dc1",
+                measurementId: "G-QZFQS419FH"
+            };
+            // console.log("Usando Firebase Config:", JSON.stringify(firebaseConfigProvided, null, 2));
+            
+            const app = initializeApp(firebaseConfigProvided);
+            const db = getFirestore(app);
+            let authInstance; 
+            try {
+                authInstance = initializeAuth(app, {
+                    persistence: indexedDBLocalPersistence 
+                });
+                console.log("Firebase Auth inicializado com persistência IndexedDB.");
+            } catch (e) {
+                console.error("Erro crítico ao inicializar Firebase Auth com persistência:", e);
+                alert("Não foi possível inicializar o sistema de autenticação devido a restrições de armazenamento do navegador. Por favor, verifique as configurações de cookies e privacidade do seu navegador (especialmente se cookies de terceiros estão bloqueados) e tente recarregar a página.");
+                if(loadingOverlay) loadingOverlay.classList.add('hidden'); 
+                showScreen('auth'); 
+                showAuthError('login', "Erro de armazenamento do navegador. Verifique as configurações.");
+                return; 
+            }
+            
+            const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfigProvided.projectId || 'gestao-de-lancamentos-fallback';
+            
+            let userId = null;
+            let userEmail = null; 
+            let userDisplayName = null; 
+            let activeHouseholdId = null; 
+            let householdData = null; 
+            
+            let transactionsCollectionRef = null; 
+            let investmentsCollectionRef = null; // Placeholder for investments
+            let unsubscribeFirestore = null; 
+
+            const authSection = document.getElementById('auth-section');
+            const householdSection = document.getElementById('household-section'); 
+            const createHouseholdSection = document.getElementById('create-household-section'); 
+            const manageHouseholdSection = document.getElementById('manage-household-section'); 
+            const appContentSection = document.getElementById('app-content');
+            const investmentsSection = document.getElementById('investments-section');
+
+            // Investment UI Elements
+            const investmentsBtn = document.getElementById('investments-btn');
+            const backToAppFromInvestmentsBtn = document.getElementById('back-to-app-from-investments-btn');
+            const addInvestmentAccountBtn = document.getElementById('add-investment-account-btn');
+            const investmentAccountsListDiv = document.getElementById('investment-accounts-list');
+
+            // Add Investment Account Modal Elements
+            const addInvestmentAccountModal = document.getElementById('add-investment-account-modal');
+            const addInvestmentAccountModalContent = document.getElementById('add-investment-account-modal-content');
+            const closeAddInvestmentAccountModalBtn = document.getElementById('close-add-investment-account-modal-btn');
+            const addInvestmentAccountForm = document.getElementById('add-investment-account-form');
+            const investmentAccountNameInput = document.getElementById('investment-account-name');
+            const investmentAccountTypeSelect = document.getElementById('investment-account-type');
+            const investmentAccountDescriptionTextarea = document.getElementById('investment-account-description');
+            const investmentAccountInitialAmountInput = document.getElementById('investment-account-initial-amount');
+            const addInvestmentAccountErrorEl = document.getElementById('add-investment-account-error');
+
+            // Add Investment Entry Modal Elements
+            const addInvestmentEntryModal = document.getElementById('add-investment-entry-modal');
+            const addInvestmentEntryModalContent = document.getElementById('add-investment-entry-modal-content');
+            const closeAddInvestmentEntryModalBtn = document.getElementById('close-add-investment-entry-modal-btn');
+            const addInvestmentEntryForm = document.getElementById('add-investment-entry-form');
+            const addInvestmentEntryModalTitle = document.getElementById('add-investment-entry-modal-title');
+            const investmentEntryAccountIdInput = document.getElementById('investment-entry-accountId');
+            const investmentEntryDateInput = document.getElementById('investment-entry-date');
+            const investmentEntryAmountInput = document.getElementById('investment-entry-amount');
+            const investmentEntryTypeSelect = document.getElementById('investment-entry-type');
+            const investmentEntryDescriptionTextarea = document.getElementById('investment-entry-description');
+            const addInvestmentEntryErrorEl = document.getElementById('add-investment-entry-error');
+
+            const householdNameInput = document.getElementById('household-name'); 
+            const createHouseholdBtn = document.getElementById('create-household-btn'); 
+            const householdErrorEl = document.getElementById('household-error'); 
+            const inviteMemberForm = document.getElementById('invite-member-form'); 
+            const inviteEmailInput = document.getElementById('invite-email'); 
+            const inviteStatusEl = document.getElementById('invite-status'); 
+            const displayHouseholdName = document.getElementById('display-household-name');
+            const displayHouseholdId = document.getElementById('display-household-id');
+            const householdMembersList = document.getElementById('household-members-list');
+            const manageFamilyBtn = document.getElementById('manage-family-btn'); 
+            const backToAppBtn = document.getElementById('back-to-app-btn');
+            const leaveFamilyBtn = document.getElementById('leave-family-btn');
+            const disbandFamilyBtn = document.getElementById('disband-family-btn');
+
+
+            const acceptInviteSection = document.getElementById('accept-invite-section');
+            const pendingInvitesListEl = document.getElementById('pending-invites-list');
+            const noPendingInvitesMsg = document.getElementById('no-pending-invites-msg');
+
+            const authTitle = document.getElementById('auth-title');
+            const authSubtitle = document.getElementById('auth-subtitle');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const loginEmailInput = document.getElementById('login-email');
+            const loginPasswordInput = document.getElementById('login-password');
+            const registerEmailInput = document.getElementById('register-email');
+            const registerPasswordInput = document.getElementById('register-password');
+            const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
+            const loginErrorEl = document.getElementById('login-error');
+            const registerErrorEl = document.getElementById('register-error');
+            const showRegisterFormBtn = document.getElementById('show-register-form-btn');
+            const showLoginFormBtn = document.getElementById('show-login-form-btn');
+            const authPromptLogin = document.getElementById('auth-prompt-login');
+            const authPromptRegister = document.getElementById('auth-prompt-register');
+            
+            const logoutBtn = document.getElementById('logout-btn');
+            const userInfoEl = document.getElementById('user-info');
+            const userGreetingEl = document.getElementById('user-greeting');
+
+            const localConfig = { 
+                 people: [], 
+                 expenseCategories: [
+                    'Moradia', 'Alimentação', 'Transporte', 'Lazer (Casal)', 'Saúde',
+                    'Despesa Pessoal', 'Contas da Casa', 
+                    'Internet e TV', 'Educação' , 'Presentes', 'Investimentos (Saída)', 'Outras Despesas'
+                ],
+                incomeCategories: [
+                    'Salário', 'Renda Extra', 
+                    'Venda de Item', 'Outras Receitas'
+                ],
+            };
+
+            let transactions = []; 
+            let selectedMonthYear;
+            let charts = {};
+
+            const monthFilter = document.getElementById('month-filter');
+            const totalIncomeEl = document.getElementById('total-income');
+            const totalExpenseEl = document.getElementById('total-expense');
+            const balanceEl = document.getElementById('balance');
+            const tableBody = document.getElementById('transactions-table-body');
+            const noTransactionsMsg = document.getElementById('no-transactions-msg');
+
+            const modalEl = document.getElementById('modal'); 
+            const modalContent = document.getElementById('modal-content');
+            const addTransactionBtn = document.getElementById('add-transaction-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const transactionForm = document.getElementById('transaction-form');
+            const transactionTypeSelect = document.getElementById('transaction-type');
+            const transactionCategorySelect = document.getElementById('transaction-category');
+            const transactionDateInput = document.getElementById('transaction-date');
+
+            function showScreen(screenName) {
+                if(authSection) authSection.classList.add('hidden');
+                if(householdSection) householdSection.classList.add('hidden');
+                if(appContentSection) appContentSection.classList.add('hidden');
+                if(investmentsSection) investmentsSection.classList.add('hidden');
+                if(loadingOverlay) loadingOverlay.classList.add('hidden'); 
+
+                if (screenName === 'auth' && authSection) authSection.classList.remove('hidden');
+                else if (screenName === 'household' && householdSection) householdSection.classList.remove('hidden');
+                else if (screenName === 'app' && appContentSection) appContentSection.classList.remove('hidden');
+                else if (screenName === 'investments' && investmentsSection) investmentsSection.classList.remove('hidden');
+                else if (screenName === 'loading' && loadingOverlay) loadingOverlay.classList.remove('hidden');
+            }
+            
+            function showAuthError(formType, message) {
+                let el;
+                if (formType === 'login') el = loginErrorEl;
+                else if (formType === 'register') el = registerErrorEl;
+                else return;
+                if(el) el.textContent = message; 
+            }
+
+            function clearAuthErrors() {
+                if(loginErrorEl) loginErrorEl.textContent = '';
+                if(registerErrorEl) registerErrorEl.textContent = '';
+            }
+
+            function toggleAuthForms(showLogin = true) {
+                clearAuthErrors();
+                if (showLogin) {
+                    if(loginForm) loginForm.classList.remove('hidden');
+                    if(registerForm) registerForm.classList.add('hidden');
+                    if(authPromptLogin) authPromptLogin.classList.remove('hidden');
+                    if(authPromptRegister) authPromptRegister.classList.add('hidden');
+                    if(authTitle) authTitle.textContent = "Login";
+                    if(authSubtitle) authSubtitle.textContent = "Acesse seu painel financeiro.";
+                } else {
+                    if(loginForm) loginForm.classList.add('hidden');
+                    if(registerForm) registerForm.classList.remove('hidden');
+                    if(authPromptLogin) authPromptLogin.classList.add('hidden');
+                    if(authPromptRegister) authPromptRegister.classList.remove('hidden');
+                    if(authTitle) authTitle.textContent = "Registrar";
+                    if(authSubtitle) authSubtitle.textContent = "Crie sua conta para começar.";
+                }
+            }
+            
+            function traduireErroAuth(errorCode) { 
+                 switch (errorCode) {
+                    case 'auth/invalid-email': return 'Formato de email inválido.';
+                    case 'auth/user-disabled': return 'Este usuário foi desabilitado.';
+                    case 'auth/user-not-found': return 'Usuário não encontrado. Verifique o email ou registre-se.';
+                    case 'auth/wrong-password': return 'Senha incorreta.';
+                    case 'auth/email-already-in-use': return 'Este email já está em uso por outra conta.';
+                    case 'auth/weak-password': return 'Senha muito fraca. Use pelo menos 6 caracteres.';
+                    case 'auth/operation-not-allowed': return 'Este método de login não está habilitado no Firebase.';
+                    case 'auth/missing-password': return 'Por favor, insira a senha.';
+                    case 'auth/invalid-credential': return 'Credenciais inválidas (email ou senha).';
+                    case 'auth/configuration-not-found': return 'Erro de configuração do Firebase Auth. Verifique o console do Firebase.';
+                    case 'auth/storage-unsupported': return 'O navegador não suporta armazenamento para persistência do login. Tente um navegador diferente ou verifique as configurações.';
+                    case 'auth/internal-error': return 'Ocorreu um erro interno no sistema de autenticação. Tente novamente.';
+                    case 'auth/argument-error': return 'Erro de argumento na função de autenticação. Verifique o console.';
+                    default: return 'Ocorreu um erro de autenticação. Tente novamente. Código: ' + errorCode;
+                }
+            }
+
+            async function removeMember(memberIdToRemove) {
+                if (!userId || !activeHouseholdId || !householdData) {
+                    alert("Erro: Usuário não logado ou família não selecionada.");
+                    return;
+                }
+
+                if (userId !== householdData.ownerId) {
+                    alert("Apenas o proprietário pode remover membros.");
+                    return;
+                }
+
+                if (memberIdToRemove === userId) {
+                    alert("O proprietário não pode remover a si mesmo desta forma.");
+                    return;
+                }
+
+                const memberDetails = householdData.members[memberIdToRemove];
+                const memberNameToConfirm = memberDetails?.name || memberDetails?.email || memberIdToRemove;
+
+                if (confirm(`Tem certeza que deseja remover ${memberNameToConfirm} desta família?`)) {
+                    showScreen('loading');
+                    const batch = writeBatch(db);
+                    const householdDocRef = doc(db, "households", activeHouseholdId);
+                    // const userToRemoveDocRef = doc(db, "users", memberIdToRemove); // Line removed/commented
+
+                    try {
+                        batch.update(householdDocRef, {
+                            [`members.${memberIdToRemove}`]: deleteField()
+                        });
+                        // batch.update(userToRemoveDocRef, { // Line removed/commented
+                        //     activeHouseholdId: null
+                        // });
+                        await batch.commit();
+
+                        // UI will be updated by onSnapshot, but a direct call can make it feel faster
+                        // populateManageHouseholdUI();
+                        if(inviteStatusEl) {
+                            inviteStatusEl.textContent = "Membro removido com sucesso.";
+                            inviteStatusEl.className = 'text-emerald-600 dark:text-emerald-400 text-sm text-center h-4 mt-2';
+                            setTimeout(() => { inviteStatusEl.textContent = ''; }, 3000);
+                        }
+                         showScreen('household'); // Stay on the same screen to see the updated list
+                    } catch (error) {
+                        console.error("Erro ao remover membro:", error);
+                        alert("Erro ao remover membro: " + error.message);
+                        showScreen('household');
+                    }
+                }
+            }
+
+            async function disbandFamily() {
+                if (!userId || !activeHouseholdId || !householdData) {
+                    alert("Erro: Usuário não logado ou família não selecionada.");
+                    return;
+                }
+
+                if (userId !== householdData.ownerId) {
+                    alert("Apenas o proprietário pode excluir a família.");
+                    return;
+                }
+
+                if (confirm("Tem certeza que deseja excluir esta família? Esta ação é PERMANENTE e removerá TODOS os membros. Todos os dados compartilhados serão perdidos.")) {
+                    showScreen('loading');
+                    const householdDocRef = doc(db, "households", activeHouseholdId);
+                    const memberIds = Object.keys(householdData.members || {});
+                    const batch = writeBatch(db);
+
+                    try {
+                        batch.delete(householdDocRef);
+                        memberIds.forEach(memberId => {
+                            const userDocRef = doc(db, "users", memberId);
+                            batch.update(userDocRef, { activeHouseholdId: null });
+                        });
+                        await batch.commit();
+
+                        activeHouseholdId = null;
+                        householdData = null;
+
+                        if (typeof unsubscribeFirestore === 'function') {
+                            unsubscribeFirestore();
+                            unsubscribeFirestore = null;
+                        }
+                        transactions = [];
+                        populateMonthFilter();
+                        updateDashboard();
+
+                        populateManageHouseholdUI();
+                        showScreen('household');
+
+                    } catch (error) {
+                        console.error("Erro ao excluir a família:", error);
+                        alert("Erro ao excluir a família: " + error.message);
+                        showScreen('household');
+                    }
+                }
+            }
+
+
+            async function leaveFamily() {
+                if (!userId || !activeHouseholdId) {
+                    alert("Erro: Usuário não logado ou família não selecionada.");
+                    return;
+                }
+
+                if (householdData && userId === householdData.ownerId) {
+                    alert("Você é o proprietário da família. Para sair, você precisa excluir a família ou transferir a propriedade.");
+                    return;
+                }
+
+                if (confirm("Tem certeza que deseja sair desta família? Esta ação não pode ser desfeita.")) {
+                    showScreen('loading');
+                    const householdDocRef = doc(db, "households", activeHouseholdId);
+                    const userDocRef = doc(db, "users", userId);
+
+                    try {
+                        await runTransaction(db, async (transaction) => {
+                            transaction.update(householdDocRef, {
+                                [`members.${userId}`]: deleteField()
+                            });
+                            transaction.update(userDocRef, {
+                                activeHouseholdId: null
+                            });
+                        });
+
+                        activeHouseholdId = null;
+                        householdData = null;
+
+                        if (typeof unsubscribeFirestore === 'function') {
+                            unsubscribeFirestore();
+                            unsubscribeFirestore = null;
+                        }
+                        transactions = [];
+                        populateMonthFilter(); // Clears and repopulates month filter
+                        updateDashboard(); // Clears charts and table
+
+                        populateManageHouseholdUI(); // Should hide leave button, show create/join
+                        showScreen('household');
+
+                    } catch (error) {
+                        console.error("Erro ao sair da família:", error);
+                        alert("Erro ao sair da família: " + error.message);
+                        showScreen('household'); // Or 'app' if the button could be there too
+                    }
+                }
+            }
+
+            function formatCurrency(value) {
+                const val = Math.abs(value);
+                const sign = value < 0 ? '- ' : '';
+                return `${sign}R$ ${val.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
+            };
+
+            function populateMonthFilter() {
+                console.log("Populando filtro de mês...");
+                const months = new Set();
+                transactions.forEach(t => {
+                    if (t.date) months.add(t.date.substring(0, 7));
+                });
+                
+                if (months.size === 0) {
+                   console.log("Nenhum mês encontrado, usando mês atual.");
+                   const now = new Date();
+                   const month = String(now.getMonth() + 1).padStart(2, '0');
+                   const year = now.getFullYear();
+                   months.add(`${year}-${month}`);
+                }
+
+                const sortedMonths = Array.from(months).sort().reverse();
+                const currentFilterValue = selectedMonthYear || (monthFilter ? monthFilter.value : null);
+                if(monthFilter) monthFilter.innerHTML = '';
+
+                sortedMonths.forEach(monthYear => {
+                    const [year, month] = monthYear.split('-');
+                    const option = document.createElement('option');
+                    option.value = monthYear;
+                    const date = new Date(year, month - 1, 1);
+                    option.textContent = date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                    if(monthFilter) monthFilter.appendChild(option);
+                });
+                
+                if (monthFilter && sortedMonths.includes(currentFilterValue)) {
+                    monthFilter.value = currentFilterValue;
+                    selectedMonthYear = currentFilterValue;
+                } else if (monthFilter && sortedMonths.length > 0) {
+                    monthFilter.value = sortedMonths[0];
+                    selectedMonthYear = sortedMonths[0];
+                } else if (monthFilter) { 
+                    const now = new Date();
+                    const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    if (!monthFilter.querySelector(`option[value="${currentMonthYear}"]`)) {
+                        const option = document.createElement('option');
+                        option.value = currentMonthYear;
+                        option.textContent = now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                        monthFilter.appendChild(option);
+                    }
+                    monthFilter.value = currentMonthYear;
+                    selectedMonthYear = currentMonthYear;
+                }
+                console.log("Mês selecionado para o filtro:", selectedMonthYear);
+            };
+
+            function populateCategorySelect() {
+                if (!transactionTypeSelect || !transactionCategorySelect) return;
+                const currentType = transactionTypeSelect.value;
+                const categories = currentType === 'Receita' ? localConfig.incomeCategories : localConfig.expenseCategories;
+                transactionCategorySelect.innerHTML = '';
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    transactionCategorySelect.appendChild(option);
+                });
+            };
+            
+            function renderTable(data) { 
+                if(!tableBody || !noTransactionsMsg) return;
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    noTransactionsMsg.classList.remove('hidden');
+                    return;
+                }
+                noTransactionsMsg.classList.add('hidden');
+                
+                data.forEach(t => {
+                    const row = document.createElement('tr');
+                    row.className = `border-b border-slate-200 dark:border-slate-700 ${t.type === 'Receita' ? 'bg-emerald-50/70 dark:bg-emerald-800/30' : 'bg-rose-50/70 dark:bg-rose-800/30'}`; 
+                    const displayDate = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data inválida';
+                    row.innerHTML = `
+                        <td class="p-3 text-slate-600 dark:text-slate-400 text-sm">${displayDate}</td>
+                        <td class="p-3 font-medium text-slate-800 dark:text-slate-200">${String(t.description || '')}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400 text-sm">${String(t.category || '')}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400 text-sm">${String(t.paymentType || '-')}</td>
+                        <td class="p-3 font-semibold text-right ${t.type === 'Receita' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}">${formatCurrency(t.amount || 0)}</td>
+                        <td class="p-3 text-slate-500 dark:text-slate-500 text-xs">${String(t.createdByName || 'Desconhecido')}</td>
+                        <td class="p-3 text-center">
+                            <button data-id="${t.id}" class="delete-btn text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1" aria-label="Excluir lançamento">&#10005;</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            };
+            
+            function destroyCharts() {
+                Object.values(charts).forEach(chart => {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                });
+                charts = {}; // Reset the charts object
+            };
+
+            function renderCharts(income, expense, expensesByCategory, incomesByCategory) {
+                 destroyCharts(); // This will now also clear charts.incomesByCategoryChart if it exists
+
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const chartLabelColor = isDarkMode ? '#cbd5e1' : '#334155'; 
+                const gridColor = isDarkMode ? '#334155' : '#e2e8f0'; 
+                const tooltipBgColor = isDarkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255,255,255,0.9)';
+                const tooltipTitleColor = isDarkMode ? '#f1f5f9' : '#1e293b';
+                const tooltipBodyColor = isDarkMode ? '#e2e8f0' : '#334155';
+                const tooltipBorderColor = isDarkMode ? '#475569' : '#e2e8f0';
+
+                // Expenses by Category Chart
+                const categoryNames = Object.keys(expensesByCategory);
+                const categoryValues = Object.values(expensesByCategory);
+                const expensesChartEl = document.getElementById('expenses-by-category-chart');
+                if (expensesChartEl) {
+                    const ctxCategory = expensesChartEl.getContext('2d');
+                    charts.categoryChart = new Chart(ctxCategory, {type: 'doughnut', data: {labels: categoryNames.length > 0 ? categoryNames : ['Nenhuma despesa'], datasets: [{data: categoryValues.length > 0 ? categoryValues : [1], backgroundColor: categoryValues.length > 0 ? ['#0ea5e9', '#14b8a6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#8b5cf6'] : ['#e2e8f0'], borderColor: isDarkMode ? '#1e293b' : '#f8fafc', borderWidth: 3 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: { position: 'bottom', labels: { color: chartLabelColor, boxWidth: 12, padding: 15, font: { size: 10 } } }, tooltip: { backgroundColor: tooltipBgColor, titleColor: tooltipTitleColor, bodyColor: tooltipBodyColor, borderColor: tooltipBorderColor, borderWidth: 1, callbacks: {label: function(context) {let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) {label += formatCurrency(context.parsed);} return label;}}}}}});
+                }
+
+                // Income vs Expense Chart
+                const incomeVsExpenseChartEl = document.getElementById('income-vs-expense-chart');
+                if (incomeVsExpenseChartEl) {
+                    const ctxIncomeVsExpense = incomeVsExpenseChartEl.getContext('2d');
+                    charts.incomeVsExpenseChart = new Chart(ctxIncomeVsExpense, {type: 'bar', data: {labels: ['Fluxo de Caixa'], datasets: [{ label: 'Receitas', data: [income], backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: 'rgba(5, 150, 105, 1)', borderWidth:1, borderRadius: 4 },{ label: 'Despesas', data: [expense], backgroundColor: 'rgba(244, 63, 94, 0.7)', borderColor: 'rgba(225, 29, 72, 1)', borderWidth:1, borderRadius: 4 }]}, options: {responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: {color: chartLabelColor} }, tooltip: { backgroundColor: tooltipBgColor, titleColor: tooltipTitleColor, bodyColor: tooltipBodyColor, borderColor: tooltipBorderColor, borderWidth: 1} }, scales: { y: { beginAtZero: true, ticks: { color: chartLabelColor, callback: (value) => formatCurrency(value) }, grid: { color: gridColor} }, x: { ticks: {color: chartLabelColor}, grid: { display: false, color: gridColor} }  }}});
+                }
+
+                // Incomes by Category Chart
+                console.log('Renderizando gráfico de Receitas (renderCharts). Dados recebidos (incomesByCategory):', incomesByCategory);
+                const incomeCategoryNames = Object.keys(incomesByCategory || {});
+                const incomeCategoryValues = Object.values(incomesByCategory || {});
+                console.log('Nomes das categorias de receita (renderCharts):', incomeCategoryNames);
+                console.log('Valores das categorias de receita (renderCharts):', incomeCategoryValues);
+
+                const incomesChartEl = document.getElementById('incomes-by-category-chart');
+                console.log('Elemento canvas para receitas (renderCharts):', incomesChartEl);
+                if (incomesChartEl) {
+                    const ctxIncomeCategory = incomesChartEl.getContext('2d');
+                    console.log('Contexto 2D para gráfico de receitas (renderCharts):', ctxIncomeCategory);
+                    charts.incomesByCategoryChart = new Chart(ctxIncomeCategory, {
+                        type: 'doughnut',
+                        data: {
+                            labels: incomeCategoryNames.length > 0 ? incomeCategoryNames : ['Nenhuma receita'],
+                            datasets: [{
+                                data: incomeCategoryValues.length > 0 ? incomeCategoryValues : [1],
+                                backgroundColor: incomeCategoryValues.length > 0 ? ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#059669', '#047857', '#065f46', '#064e3b', '#022c22'] : ['#e2e8f0'],
+                                borderColor: isDarkMode ? '#1e293b' : '#f8fafc',
+                                borderWidth: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: chartLabelColor,
+                                        boxWidth: 12,
+                                        padding: 15,
+                                        font: { size: 10 }
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: tooltipBgColor,
+                                    titleColor: tooltipTitleColor,
+                                    bodyColor: tooltipBodyColor,
+                                    borderColor: tooltipBorderColor,
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) { label += ': '; }
+                                            if (context.parsed !== null) {
+                                                label += formatCurrency(context.parsed);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    console.error('Canvas com ID "incomes-by-category-chart" NÃO encontrado!');
+                }
+            };
+
+            function updateDashboard() { 
+                console.log("Atualizando dashboard para o mês:", selectedMonthYear);
+                if (!selectedMonthYear) {
+                    console.warn("Mês não selecionado no updateDashboard, limpando dados da UI.");
+                    if(totalIncomeEl) totalIncomeEl.textContent = formatCurrency(0);
+                    if(totalExpenseEl) totalExpenseEl.textContent = formatCurrency(0);
+                    if(balanceEl) balanceEl.textContent = formatCurrency(0);
+                    renderTable([]);renderCharts(0, 0, {}, {}); return; // Pass empty object for incomesByCategory
+                }
+                const filteredTransactions = transactions.filter(t => t.date && t.date.startsWith(selectedMonthYear));
+                console.log(`Total de transações (todas): ${transactions.length}, Transações filtradas para ${selectedMonthYear}: ${filteredTransactions.length}`);
+
+                console.log('Transações filtradas para o mês (updateDashboard):', filteredTransactions);
+
+                let totalIncome = 0; let totalExpense = 0; const expensesByCategory = {};
+                const incomesByCategory = {};
+                filteredTransactions.forEach(t => {
+                    if (t.type === 'Receita') {
+                        totalIncome += t.amount;
+                        if (incomesByCategory[t.category]) {
+                            incomesByCategory[t.category] += t.amount;
+                        } else {
+                            incomesByCategory[t.category] = t.amount;
+                        }
+                    } else { // Despesa
+                        totalExpense += t.amount;
+                        if(expensesByCategory[t.category]){
+                            expensesByCategory[t.category] += t.amount;
+                        } else {
+                            expensesByCategory[t.category] = t.amount;
+                        }
+                    }
+                });
+
+                console.log('Dados calculados para gráfico de Receitas por Categoria (updateDashboard):', incomesByCategory);
+
+                const balance = totalIncome - totalExpense;
+                if(totalIncomeEl) totalIncomeEl.textContent = formatCurrency(totalIncome);
+                if(totalExpenseEl) totalExpenseEl.textContent = formatCurrency(totalExpense);
+                if(balanceEl) {
+                    balanceEl.textContent = formatCurrency(balance);
+                    balanceEl.classList.toggle('text-rose-600', balance < 0);
+                    balanceEl.classList.toggle('dark:text-rose-400', balance < 0);
+                    balanceEl.classList.toggle('text-slate-700', balance >= 0);
+                    balanceEl.classList.toggle('dark:text-slate-300', balance >= 0);
+                }
+                renderTable(filteredTransactions.sort((a,b) => new Date(b.date) - new Date(a.date)));
+                renderCharts(totalIncome, totalExpense, expensesByCategory, incomesByCategory); // New call signature
+                console.log("Dashboard atualizado.");
+            };
+
+            async function handleFormSubmit(e) { 
+                e.preventDefault();
+                if (!userId || !activeHouseholdId) {
+                    alert("Erro: Família não selecionada ou usuário não logado.");
+                    return;
+                }
+                transactionsCollectionRef = collection(db, `households/${activeHouseholdId}/transactions`);
+
+                const formData = new FormData(transactionForm);
+                const docData = {
+                    date: formData.get('date'),
+                    description: formData.get('description'),
+                    category: formData.get('category'),
+                    amount: parseFloat(formData.get('amount')),
+                    type: formData.get('type'),
+                    paymentType: formData.get('paymentType'), // Added payment type
+                    createdByUserId: userId,
+                    createdByName: userDisplayName || userEmail,
+                    monthYear: formData.get('date').substring(0, 7),
+                    createdAt: serverTimestamp()
+                };
+                
+                showScreen('loading');
+                try {
+                    await addDoc(transactionsCollectionRef, docData);
+                    closeModal();
+                    const newMonthYear = docData.monthYear;
+                     if (monthFilter && !Array.from(monthFilter.options).some(opt => opt.value === newMonthYear)) {}
+                    if(monthFilter) monthFilter.value = newMonthYear; 
+                    selectedMonthYear = newMonthYear; 
+                } catch (error) {
+                    console.error("Erro ao adicionar transação: ", error);
+                    alert("Ocorreu um erro ao salvar o lançamento.");
+                } finally {
+                    showScreen('app'); 
+                }
+            };
+            
+            async function handleDelete(e) { 
+                 if (e.target.classList.contains('delete-btn')) {
+                    const id = e.target.dataset.id;
+                    if (!userId || !activeHouseholdId) {
+                        alert("Erro: Operação não permitida.");
+                        return;
+                    }
+                    transactionsCollectionRef = collection(db, `households/${activeHouseholdId}/transactions`);
+                    if (confirm("Tem certeza que deseja excluir este lançamento?")) {
+                        showScreen('loading');
+                        try {
+                            const docRef = doc(db, `households/${activeHouseholdId}/transactions`, id);
+                            await deleteDoc(docRef);
+                        } catch (error) {
+                            console.error("Erro ao deletar transação: ", error);
+                            alert("Ocorreu um erro ao excluir o lançamento.");
+                        } finally {
+                           showScreen('app');
+                        }
+                    }
+                }
+            };
+            
+            function openModal() {
+                if(transactionForm) transactionForm.reset();
+                if(transactionDateInput) transactionDateInput.value = new Date().toISOString().split('T')[0];
+                if(transactionTypeSelect) transactionTypeSelect.value = "Despesa"; 
+                populateCategorySelect(); 
+                if(modalEl) {
+                    modalEl.classList.remove('hidden'); 
+                    modalEl.classList.add('flex');
+                }
+                if(modalContent) {
+                    setTimeout(() => {
+                        modalContent.classList.remove('scale-95', 'opacity-0');
+                        modalContent.classList.add('scale-100', 'opacity-100');
+                    }, 10); // Ajustado para usar scale e opacity
+                }
+            };
+
+            function closeModal() {
+                if(modalContent) {
+                    modalContent.classList.add('scale-95', 'opacity-0');
+                    modalContent.classList.remove('scale-100', 'opacity-100');
+                }
+                if(modalEl) {
+                    setTimeout(() => {
+                        modalEl.classList.add('hidden'); 
+                        modalEl.classList.remove('flex');
+                    }, 200); // Tempo de transição
+                }
+            };
+
+            async function setupFirestoreListener(currentHouseholdId) {
+                console.log("setupFirestoreListener chamada para householdId:", currentHouseholdId);
+                if (!userId || !currentHouseholdId) {
+                    console.error("setupFirestoreListener: UserID ou HouseholdID não definidos.");
+                    transactions = []; updateDashboard(); return;
+                }
+                transactionsCollectionRef = collection(db, `households/${currentHouseholdId}/transactions`);
+                console.log("Referência da coleção de transações definida para:", `households/${currentHouseholdId}/transactions`);
+                
+                if (unsubscribeFirestore) unsubscribeFirestore(); 
+
+                const q = query(transactionsCollectionRef, orderBy("createdAt", "desc"));
+                unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+                    console.log("onSnapshot (household): Dados recebidos.");
+                    const firestoreTransactions = [];
+                    snapshot.forEach((doc) => firestoreTransactions.push({ id: doc.id, ...doc.data() }));
+                    transactions = firestoreTransactions;
+                    console.log(`onSnapshot (household): ${transactions.length} transações foram carregadas.`);
+                    
+                    const currentSelectedMonthBeforeRepopulate = selectedMonthYear;
+                    populateMonthFilter();
+                    if (currentSelectedMonthBeforeRepopulate && monthFilter && Array.from(monthFilter.options).some(opt => opt.value === currentSelectedMonthBeforeRepopulate)) {
+                        monthFilter.value = currentSelectedMonthBeforeRepopulate; selectedMonthYear = currentSelectedMonthBeforeRepopulate;
+                    } else if (monthFilter && monthFilter.options.length > 0) { selectedMonthYear = monthFilter.value;
+                    } else { const now = new Date(); selectedMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; }
+                    
+                    updateDashboard();
+                }, (error) => {
+                    console.error("Erro no listener onSnapshot (household): ", error, "Código:", error.code);
+                    alert("Ocorreu um erro ao carregar os lançamentos: " + traduireErroAuth(error.code || 'firestore-error'));
+                    transactions = []; updateDashboard(); 
+                });
+
+                const householdDocRef = doc(db, "households", currentHouseholdId);
+                onSnapshot(householdDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        householdData = { id: docSnap.id, ...docSnap.data() };
+                        console.log("Dados do Household atualizados (onSnapshot):", householdData);
+                        if (householdSection && householdSection.classList.contains('hidden') === false) {
+                             populateManageHouseholdUI(); 
+                        }
+                    } else {
+                        console.warn("Documento do household não encontrado mais:", currentHouseholdId);
+                         activeHouseholdId = null; // Household foi deletado ou não existe mais
+                         householdData = null;
+                         showScreen('household'); // Volta para a tela de configuração de família
+                         populateManageHouseholdUI();
+                    }
+                });
+            }
+            
+            async function createHousehold() { 
+                const name = householdNameInput.value.trim() || `Família de ${userDisplayName || userEmail}`;
+                if (!userId) {
+                    if(householdErrorEl) householdErrorEl.textContent = "Usuário não logado.";
+                    return;
+                }
+                showScreen('loading');
+                try {
+                    const householdRef = await addDoc(collection(db, "households"), {
+                        ownerId: userId,
+                        name: name,
+                        members: { [userId]: { name: userDisplayName || userEmail, email: userEmail } }, 
+                        pendingInvites: {}
+                    });
+                    activeHouseholdId = householdRef.id;
+                    householdData = { id: activeHouseholdId, ownerId: userId, name: name, members: { [userId]: { name: userDisplayName || userEmail, email: userEmail } }, pendingInvites: {} };
+
+                    const userDocRef = doc(db, "users", userId);
+                    await runTransaction(db, async (transaction) => {
+                        transaction.set(userDocRef, { 
+                            activeHouseholdId: activeHouseholdId, 
+                            email: userEmail, 
+                            displayName: userDisplayName 
+                        }, { merge: true }); 
+                    });
+                    
+                    console.log("Família criada com ID:", activeHouseholdId);
+                    await setupFirestoreListener(activeHouseholdId); 
+                    showScreen('app');
+                    populateManageHouseholdUI(); 
+                } catch (error) {
+                    console.error("Erro ao criar família:", error);
+                    if(householdErrorEl) householdErrorEl.textContent = "Erro ao criar família: " + error.message;
+                    showScreen('household'); 
+                }
+            }
+
+            async function handleInviteMember(e) { 
+                e.preventDefault();
+                const targetEmail = inviteEmailInput.value.trim();
+                if (!targetEmail || !activeHouseholdId || !householdData) {
+                    if(inviteStatusEl) inviteStatusEl.textContent = "Dados da família ou email inválidos.";
+                    return;
+                }
+                if (userId !== householdData.ownerId) {
+                    if(inviteStatusEl) inviteStatusEl.textContent = "Apenas o proprietário pode convidar membros.";
+                    return;
+                }
+                showScreen('loading');
+                try {
+                    const isAlreadyMember = Object.values(householdData.members || {}).some(member => member.email === targetEmail);
+                    const safeEmailKeyForCheck = targetEmail.replace(/\./g, '_'); 
+                    const isAlreadyInvited = householdData.pendingInvites && householdData.pendingInvites[safeEmailKeyForCheck];
+
+                    if (isAlreadyMember) {
+                        if(inviteStatusEl) inviteStatusEl.textContent = "Este email já é membro da família.";
+                        showScreen('household'); populateManageHouseholdUI(); return;
+                    }
+                    if (isAlreadyInvited) {
+                        if(inviteStatusEl) inviteStatusEl.textContent = "Este email já foi convidado.";
+                        showScreen('household'); populateManageHouseholdUI(); return;
+                    }
+
+                    const householdDocRef = doc(db, "households", activeHouseholdId);
+                    const safeEmailKeyForWrite = targetEmail.replace(/\./g, '_'); 
+                    
+                    await updateDoc(householdDocRef, {
+                        [`pendingInvites.${safeEmailKeyForWrite}`]: { invitedBy: userId, invitedByName: userDisplayName || userEmail, timestamp: serverTimestamp() }
+                    });
+                    
+                    if(inviteStatusEl) inviteStatusEl.textContent = `Convite enviado para ${targetEmail}!`;
+                    if(inviteEmailInput) inviteEmailInput.value = '';
+                } catch (error) {
+                    console.error("Erro ao convidar membro:", error);
+                    if(inviteStatusEl) inviteStatusEl.textContent = "Erro ao enviar convite.";
+                } finally {
+                    showScreen('household'); 
+                }
+            }
+
+            async function checkAndDisplayInvites(targetUserEmail, currentUserId) { 
+                if (!targetUserEmail) return;
+                console.log("Verificando convites para:", targetUserEmail);
+                if(pendingInvitesListEl) pendingInvitesListEl.innerHTML = '';
+                if(acceptInviteSection) acceptInviteSection.classList.remove('hidden');
+                if(noPendingInvitesMsg) noPendingInvitesMsg.classList.remove('hidden'); 
+
+                try {
+                    const safeEmailKey = targetUserEmail.replace(/\./g, '_'); 
+                    const q = query(collection(db, "households"), where(`pendingInvites.${safeEmailKey}.invitedBy`, "!=", null)); 
+                    const snapshot = await getDocs(q);
+                    let foundInvites = false;
+                    snapshot.forEach(householdDoc => {
+                        const household = { id: householdDoc.id, ...householdDoc.data() };
+                        if (household.pendingInvites && household.pendingInvites[safeEmailKey] && household.pendingInvites[safeEmailKey].invitedBy) {
+                            const inviteData = household.pendingInvites[safeEmailKey];
+                            foundInvites = true;
+                            if(noPendingInvitesMsg) noPendingInvitesMsg.classList.add('hidden');
+                            const inviteItem = document.createElement('div');
+                            inviteItem.className = 'p-3 mb-2 border border-slate-200 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-600/50 flex justify-between items-center text-sm text-slate-700 dark:text-slate-300'; 
+                            inviteItem.innerHTML = `<span>Convidado para "<span class="font-medium">${household.name || 'Família sem nome'}</span>" por <span class="font-medium">${inviteData.invitedByName || 'Alguém'}</span></span>`;
+                            const acceptBtn = document.createElement('button');
+                            acceptBtn.className = 'bg-emerald-500 text-white text-xs sm:text-sm py-1.5 px-3 rounded-md hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-colors shadow-sm';
+                            acceptBtn.textContent = 'Aceitar';
+                            acceptBtn.onclick = async () => {
+                                await acceptInvite(household.id, currentUserId, targetUserEmail, userDisplayName || userEmail);
+                            };
+                            inviteItem.appendChild(acceptBtn);
+                            if(pendingInvitesListEl) pendingInvitesListEl.appendChild(inviteItem);
+                        }
+                    });
+                     if (!foundInvites) console.log("Nenhum convite pendente encontrado para", targetUserEmail);
+                     else console.log("Convites pendentes exibidos.");
+
+                } catch (error) {
+                    console.error("Erro ao buscar convites:", error);
+                    if(noPendingInvitesMsg) noPendingInvitesMsg.textContent = "Erro ao buscar convites.";
+                }
+            }
+            
+            async function acceptInvite(householdIdToJoin, currentUserId, currentUserEmail, currentUserName) { 
+                 showScreen('loading');
+                try {
+                    const householdDocRef = doc(db, "households", householdIdToJoin);
+                    const userDocRef = doc(db, "users", currentUserId);
+                    const safeEmailKey = currentUserEmail.replace(/\./g, '_'); 
+
+                    await runTransaction(db, async (transaction) => {
+                        const householdSnap = await transaction.get(householdDocRef);
+                        if (!householdSnap.exists()) throw "Família não encontrada.";
+                        
+                        const householdUpdateData = {};
+                        householdUpdateData[`members.${currentUserId}`] = { name: currentUserName, email: currentUserEmail };
+                        householdUpdateData[`pendingInvites.${safeEmailKey}`] = deleteField(); 
+
+                        transaction.update(householdDocRef, householdUpdateData);
+                        transaction.set(userDocRef, { activeHouseholdId: householdIdToJoin, email: currentUserEmail, displayName: currentUserName }, { merge: true });
+                    });
+
+                    activeHouseholdId = householdIdToJoin; 
+                    console.log(`Usuário ${currentUserId} aceitou convite para família ${activeHouseholdId}`);
+                    await setupFirestoreListener(activeHouseholdId); 
+                    showScreen('app');
+                    populateManageHouseholdUI();
+                } catch (error) {
+                    console.error("Erro ao aceitar convite:", error);
+                    alert("Erro ao aceitar convite: " + error.message);
+                    showScreen('household'); 
+                }
+            }
+
+            function populateManageHouseholdUI() { 
+                const leaveFamilyBtn = document.getElementById('leave-family-btn');
+                const disbandFamilyBtn = document.getElementById('disband-family-btn');
+                const inviteMemberForm = document.getElementById('invite-member-form');
+
+                if (householdData && activeHouseholdId) {
+                    const isOwner = userId === householdData.ownerId;
+
+                    if(createHouseholdSection) createHouseholdSection.classList.add('hidden');
+                    if(manageHouseholdSection) manageHouseholdSection.classList.remove('hidden');
+                    if(acceptInviteSection) acceptInviteSection.classList.add('hidden'); // Invites are handled separately below or if user has no family.
+
+                    if(displayHouseholdName) displayHouseholdName.textContent = householdData.name || 'Família sem nome';
+                    if(displayHouseholdId) displayHouseholdId.textContent = activeHouseholdId;
+
+                    // Invite form visibility
+                    if(inviteMemberForm) {
+                        if (isOwner) {
+                            inviteMemberForm.classList.remove('hidden');
+                        } else {
+                            inviteMemberForm.classList.add('hidden');
+                        }
+                    }
+
+                    // Render members list
+                    if(householdMembersList) householdMembersList.innerHTML = '';
+                    if (householdData.members) {
+                        Object.entries(householdData.members).forEach(([memberId, memberData]) => {
+                            const li = document.createElement('li');
+                            li.className = 'flex justify-between items-center py-1';
+
+                            const memberNameSpan = document.createElement('span');
+                            memberNameSpan.textContent = memberData.name || memberData.email;
+                            li.appendChild(memberNameSpan);
+
+                            if (isOwner && userId !== memberId) {
+                                const removeButton = document.createElement('button');
+                                removeButton.textContent = 'Remover';
+                                removeButton.className = 'bg-red-500 text-white text-xs py-0.5 px-2 rounded hover:bg-red-600 ml-2';
+                                removeButton.onclick = () => removeMember(memberId);
+                                li.appendChild(removeButton);
+                            }
+                            if(householdMembersList) householdMembersList.appendChild(li);
+                        });
+                    }
+
+                    // Disband Family button visibility
+                    if (disbandFamilyBtn) {
+                        if (isOwner) {
+                            disbandFamilyBtn.classList.remove('hidden');
+                        } else {
+                            disbandFamilyBtn.classList.add('hidden');
+                        }
+                    }
+
+                    // Leave Family button visibility
+                    if (leaveFamilyBtn) {
+                        const isMember = householdData.members && householdData.members[userId];
+                        if (isMember && !isOwner) {
+                            leaveFamilyBtn.classList.remove('hidden');
+                        } else {
+                            leaveFamilyBtn.classList.add('hidden');
+                        }
+                    }
+
+                } else { // User is not in a household or data is not loaded
+                    if(createHouseholdSection) createHouseholdSection.classList.remove('hidden');
+                    if(manageHouseholdSection) manageHouseholdSection.classList.add('hidden'); // Hide manage section
+
+                    // Ensure all related controls are hidden if not in a household
+                    if(inviteMemberForm) inviteMemberForm.classList.add('hidden');
+                    if(leaveFamilyBtn) leaveFamilyBtn.classList.add('hidden');
+                    if(disbandFamilyBtn) disbandFamilyBtn.classList.add('hidden');
+                    if(householdMembersList) householdMembersList.innerHTML = ''; // Clear member list
+
+                    // Show pending invites if any
+                    if (userId && userEmail) { 
+                        checkAndDisplayInvites(userEmail, userId); // This function itself handles visibility of acceptInviteSection
+                    } else {
+                         if(acceptInviteSection) acceptInviteSection.classList.add('hidden');
+                    }
+                }
+            }
+
+            if(showRegisterFormBtn) showRegisterFormBtn.addEventListener('click', () => toggleAuthForms(false));
+            if(showLoginFormBtn) showLoginFormBtn.addEventListener('click', () => toggleAuthForms(true));
+            if(loginForm) loginForm.addEventListener('submit', async (e) => { 
+                 e.preventDefault(); clearAuthErrors(); showScreen('loading');
+                const email = loginEmailInput.value; const password = loginPasswordInput.value;
+                try { await signInWithEmailAndPassword(authInstance, email, password); } catch (error) { console.error("Erro no login E-mail/Senha:", error); showAuthError('login', traduireErroAuth(error.code)); showScreen('auth'); } 
+            });
+            if(registerForm) registerForm.addEventListener('submit', async (e) => { 
+                 e.preventDefault(); clearAuthErrors();
+                const email = registerEmailInput.value; const password = registerPasswordInput.value; const confirmPassword = registerConfirmPasswordInput.value;
+                if (password !== confirmPassword) { showAuthError('register', "As senhas não coincidem."); return; }
+                if (password.length < 6) { showAuthError('register', "A senha deve ter no mínimo 6 caracteres."); return; }
+                showScreen('loading');
+                try { await createUserWithEmailAndPassword(authInstance, email, password); toggleAuthForms(true); loginEmailInput.value = email; loginPasswordInput.value = ''; loginErrorEl.textContent = "Registro realizado! Faça o login."; showScreen('auth'); } catch (error) { console.error("Erro no registro E-mail/Senha:", error); showAuthError('register', traduireErroAuth(error.code)); showScreen('auth'); } 
+            });
+            
+            if(logoutBtn) logoutBtn.addEventListener('click', async () => {
+                showScreen('loading'); try { await signOut(authInstance); } catch (error) { console.error("Erro no logout:", error); alert("Erro ao sair."); showScreen('auth'); } 
+            });
+            if(createHouseholdBtn) createHouseholdBtn.addEventListener('click', createHousehold);
+            if(inviteMemberForm) inviteMemberForm.addEventListener('submit', handleInviteMember);
+            if(leaveFamilyBtn) leaveFamilyBtn.addEventListener('click', leaveFamily);
+            if(disbandFamilyBtn) disbandFamilyBtn.addEventListener('click', disbandFamily);
+            if(monthFilter) monthFilter.addEventListener('change', (e) => { selectedMonthYear = e.target.value; updateDashboard(); });
+            if(addTransactionBtn) addTransactionBtn.addEventListener('click', openModal);
+            if(closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+            if(modalEl) modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+            if(transactionForm) transactionForm.addEventListener('submit', handleFormSubmit);
+            if(transactionTypeSelect) transactionTypeSelect.addEventListener('change', populateCategorySelect);
+            if(tableBody) tableBody.addEventListener('click', handleDelete);
+            if(manageFamilyBtn) manageFamilyBtn.addEventListener('click', () => { showScreen('household'); populateManageHouseholdUI(); });
+            if(backToAppBtn) backToAppBtn.addEventListener('click', () => { showScreen('app'); });
+
+            // Investment Screen and Modals Logic
+            function openAddInvestmentAccountModal() {
+                if(addInvestmentAccountForm) addInvestmentAccountForm.reset();
+                if(addInvestmentAccountErrorEl) addInvestmentAccountErrorEl.textContent = '';
+                if(addInvestmentAccountModal) {
+                    addInvestmentAccountModal.classList.remove('hidden');
+                    addInvestmentAccountModal.classList.add('flex');
+                }
+                if(addInvestmentAccountModalContent) {
+                    setTimeout(() => {
+                        addInvestmentAccountModalContent.classList.remove('scale-95', 'opacity-0');
+                        addInvestmentAccountModalContent.classList.add('scale-100', 'opacity-100');
+                    }, 10);
+                }
+            }
+
+            function closeAddInvestmentAccountModal() {
+                if(addInvestmentAccountModalContent) {
+                    addInvestmentAccountModalContent.classList.add('scale-95', 'opacity-0');
+                    addInvestmentAccountModalContent.classList.remove('scale-100', 'opacity-100');
+                }
+                if(addInvestmentAccountModal) {
+                    setTimeout(() => {
+                        addInvestmentAccountModal.classList.add('hidden');
+                        addInvestmentAccountModal.classList.remove('flex');
+                    }, 200);
+                }
+            }
+
+            function openAddInvestmentEntryModal(accountId, accountName) {
+                if(addInvestmentEntryForm) addInvestmentEntryForm.reset();
+                if(addInvestmentEntryErrorEl) addInvestmentEntryErrorEl.textContent = '';
+                if(addInvestmentEntryModalTitle && accountName) addInvestmentEntryModalTitle.textContent = `Adicionar Movimentação em ${accountName}`;
+                else if(addInvestmentEntryModalTitle) addInvestmentEntryModalTitle.textContent = 'Adicionar Movimentação';
+                if(investmentEntryAccountIdInput && accountId) investmentEntryAccountIdInput.value = accountId;
+                
+                if(addInvestmentEntryModal) {
+                    addInvestmentEntryModal.classList.remove('hidden');
+                    addInvestmentEntryModal.classList.add('flex');
+                }
+                if(addInvestmentEntryModalContent) {
+                    setTimeout(() => {
+                        addInvestmentEntryModalContent.classList.remove('scale-95', 'opacity-0');
+                        addInvestmentEntryModalContent.classList.add('scale-100', 'opacity-100');
+                    }, 10);
+                }
+            }
+
+            function closeAddInvestmentEntryModal() {
+                if(addInvestmentEntryModalContent) {
+                    addInvestmentEntryModalContent.classList.add('scale-95', 'opacity-0');
+                    addInvestmentEntryModalContent.classList.remove('scale-100', 'opacity-100');
+                }
+                if(addInvestmentEntryModal) {
+                    setTimeout(() => {
+                        addInvestmentEntryModal.classList.add('hidden');
+                        addInvestmentEntryModal.classList.remove('flex');
+                    }, 200);
+                }
+            }
+
+            // Event Listeners for Investments
+            // if(investmentsBtn) investmentsBtn.addEventListener('click', () => showScreen('investments'));
+            if(backToAppFromInvestmentsBtn) backToAppFromInvestmentsBtn.addEventListener('click', () => showScreen('app'));
+            if(addInvestmentAccountBtn) addInvestmentAccountBtn.addEventListener('click', openAddInvestmentAccountModal);
+            if(closeAddInvestmentAccountModalBtn) closeAddInvestmentAccountModalBtn.addEventListener('click', closeAddInvestmentAccountModal);
+            if(addInvestmentAccountModal) addInvestmentAccountModal.addEventListener('click', (e) => {
+                if (e.target === addInvestmentAccountModal) closeAddInvestmentAccountModal();
+            });
+            if(closeAddInvestmentEntryModalBtn) closeAddInvestmentEntryModalBtn.addEventListener('click', closeAddInvestmentEntryModal);
+            if(addInvestmentEntryModal) addInvestmentEntryModal.addEventListener('click', (e) => {
+                if (e.target === addInvestmentEntryModal) closeAddInvestmentEntryModal();
+            });
+
+            // --- Menu Logic ---
+
+            function toggleMobileOverlayMenu() {
+                if (mobileOverlayMenu) {
+                    const isHidden = mobileOverlayMenu.classList.contains('hidden');
+                    if (isHidden) {
+                        mobileOverlayMenu.classList.remove('hidden');
+                        requestAnimationFrame(() => {
+                            mobileOverlayMenu.classList.remove('translate-x-full');
+                            mobileOverlayMenu.classList.add('translate-x-0');
+                        });
+                    } else {
+                        mobileOverlayMenu.classList.remove('translate-x-0');
+                        mobileOverlayMenu.classList.add('translate-x-full');
+                        mobileOverlayMenu.addEventListener('transitionend', () => {
+                            mobileOverlayMenu.classList.add('hidden');
+                        }, { once: true });
+                    }
+                }
+            }
+
+            function toggleDesktopSidebarMenu() {
+                if (desktopSidebarMenu) {
+                    const isHidden = desktopSidebarMenu.classList.contains('hidden');
+                    if (isHidden) {
+                        desktopSidebarMenu.classList.remove('hidden');
+                        requestAnimationFrame(() => {
+                            desktopSidebarMenu.classList.remove('-translate-x-full');
+                            desktopSidebarMenu.classList.add('translate-x-0');
+                        });
+                    } else {
+                        desktopSidebarMenu.classList.remove('translate-x-0');
+                        desktopSidebarMenu.classList.add('-translate-x-full');
+                        desktopSidebarMenu.addEventListener('transitionend', () => {
+                            desktopSidebarMenu.classList.add('hidden');
+                        }, { once: true });
+                    }
+                }
+            }
+
+            if (universalHamburgerButton) {
+                universalHamburgerButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    if (window.matchMedia('(min-width: 1024px)').matches) { // lg breakpoint
+                        if (mobileOverlayMenu && !mobileOverlayMenu.classList.contains('hidden') && !mobileOverlayMenu.classList.contains('translate-x-full')) {
+                            toggleMobileOverlayMenu();
+                        }
+                        toggleDesktopSidebarMenu();
+                    } else {
+                        if (desktopSidebarMenu && !desktopSidebarMenu.classList.contains('hidden') && !desktopSidebarMenu.classList.contains('-translate-x-full')) {
+                            toggleDesktopSidebarMenu();
+                        }
+                        toggleMobileOverlayMenu();
+                    }
+                });
+            }
+
+            if (closeDesktopSidebarButton) {
+                closeDesktopSidebarButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    toggleDesktopSidebarMenu();
+                });
+            }
+            if (closeMobileOverlayButton) {
+                closeMobileOverlayButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    toggleMobileOverlayMenu();
+                });
+            }
+
+            // Removed event listeners for desktopSidebarFamilyLink and mobileOverlayFamilyLink
+            // as these elements are now dynamically generated and direct href navigation is used.
+            // The manageFamilyBtn on the main header and URL param logic handle the "Família" action.
+
+            document.addEventListener('click', (event) => {
+                if (window.matchMedia('(min-width: 1024px)').matches && desktopSidebarMenu && !desktopSidebarMenu.classList.contains('hidden') && !desktopSidebarMenu.classList.contains('-translate-x-full')) {
+                    if (universalHamburgerButton && !universalHamburgerButton.contains(event.target) && !desktopSidebarMenu.contains(event.target)) {
+                        toggleDesktopSidebarMenu();
+                    }
+                }
+            });
+
+            // --- End of Menu Logic ---
+
+            onAuthStateChanged(authInstance, async (user) => {
+                console.log("onAuthStateChanged disparado. User:", user ? user.uid : 'null');
+                showScreen('loading'); 
+                if (user) {
+                    userId = user.uid; userEmail = user.email; userDisplayName = user.displayName;
+                    clearAuthErrors(); 
+
+                    const userDocRef = doc(db, "users", userId);
+                    const userDocSnap = await getDoc(userDocRef);
+
+                    if (userDocSnap.exists() && userDocSnap.data().activeHouseholdId) {
+                        activeHouseholdId = userDocSnap.data().activeHouseholdId;
+                        const householdDocRef = doc(db, "households", activeHouseholdId);
+                        const householdDocSnap = await getDoc(householdDocRef);
+                        if (householdDocSnap.exists()) {
+                           householdData = { id: householdDocSnap.id, ...householdDocSnap.data() };
+                           console.log("Usuário logado, householdId encontrado:", activeHouseholdId);
+                           await setupFirestoreListener(activeHouseholdId);
+                           showScreen('app');
+                        } else {
+                             console.warn(`activeHouseholdId (${activeHouseholdId}) no perfil do usuário, mas o household não existe. Exibindo tela de household.`);
+                             activeHouseholdId = null; householdData = null;
+                             showScreen('household');
+                             populateManageHouseholdUI(); // Call this to show appropriate create/join or invites
+                        }
+                    } else { 
+                        console.log("Usuário logado, mas sem activeHouseholdId ou perfil. Exibindo tela de configuração de família.");
+                        if (!userDocSnap.exists()) {
+                            console.log("Perfil do usuário não existe, tentando criar/atualizar...");
+                            try {
+                                await runTransaction(db, async (transaction) => {
+                                    console.log("Dentro da transação para criar perfil. UserID:", userId, "Email:", userEmail, "DisplayName:", userDisplayName);
+                                    transaction.set(userDocRef, { email: userEmail, displayName: userDisplayName, activeHouseholdId: null }, { merge: true });
+                                });
+                                console.log("Perfil de usuário criado/atualizado para:", userId);
+                            } catch (profileError) {
+                                console.error("Erro CRÍTICO ao criar/atualizar perfil do usuário:", profileError, "Detalhes:", profileError.message, profileError.stack);
+                                alert("Erro CRÍTICO ao configurar perfil do usuário. Verifique o console e as regras de segurança do Firestore para o caminho /users/{userId}.");
+                                showScreen('auth'); 
+                                if(logoutBtn) logoutBtn.click(); 
+                                return;
+                            }
+                        }
+                        activeHouseholdId = null; householdData = null;
+                        if (unsubscribeFirestore) { unsubscribeFirestore(); unsubscribeFirestore = null;}
+                        transactions = []; populateMonthFilter(); updateDashboard(); 
+                        showScreen('household');
+                        populateManageHouseholdUI(); // Call this to show appropriate create/join or invites
+                    }
+                    
+                    if(authInstance.currentUser) { 
+                        const currentUserName = authInstance.currentUser.displayName || authInstance.currentUser.email || 'Usuário';
+                        if(userGreetingEl) userGreetingEl.textContent = `Bem-vindo(a), ${currentUserName}!`;
+                        if(logoutBtn) logoutBtn.classList.remove('hidden');
+                    }
+
+                    // After auth and initial screen setup, check for pending manageFamily action
+                    if (pendingManageFamilyAction) {
+                        const manageFamilyButton = document.getElementById('manage-family-btn');
+                        if (manageFamilyButton) {
+                            manageFamilyButton.click();
+                            history.replaceState(null, '', window.location.pathname); // Clean URL
+                        } else {
+                            console.warn('manage-family-btn not found for action=manageFamily post-auth');
+                        }
+                        pendingManageFamilyAction = false; // Reset flag
+                    }
+
+                } else { 
+                    userId = null; userEmail = null; userDisplayName = null; activeHouseholdId = null; householdData = null;
+                    if (unsubscribeFirestore) { unsubscribeFirestore(); unsubscribeFirestore = null; }
+                    transactions = []; selectedMonthYear = null; 
+                    populateMonthFilter(); updateDashboard(); 
+                    
+                    if(userInfoEl){ userInfoEl.classList.add('hidden'); userInfoEl.textContent = '';}
+                    if(userGreetingEl) userGreetingEl.textContent = "Gestão de Lançamentos do Mês";
+                    if(logoutBtn) logoutBtn.classList.add('hidden');
+                    toggleAuthForms(true); 
+                    showScreen('auth');
+                    console.log("Usuário deslogado. Exibindo tela de autenticação.");
+                }
+            });
+            
+            if (authInstance && !authInstance.currentUser) { 
+                showScreen('auth');
+            } else if (authInstance && authInstance.currentUser) {
+                 showScreen('loading'); 
+            } else {
+                showScreen('auth');
+                showAuthError('login', "Falha na inicialização do sistema de autenticação.");
+            }
+        });
+    </script>
+</body>
 </html>
